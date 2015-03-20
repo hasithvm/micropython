@@ -175,6 +175,18 @@
 #define MICROPY_COMP_CONST (1)
 #endif
 
+// Whether to enable optimisation of: a, b = c, d
+// Costs 124 bytes (Thumb2)
+#ifndef MICROPY_COMP_DOUBLE_TUPLE_ASSIGN
+#define MICROPY_COMP_DOUBLE_TUPLE_ASSIGN (1)
+#endif
+
+// Whether to enable optimisation of: a, b, c = d, e, f
+// Cost 156 bytes (Thumb2)
+#ifndef MICROPY_COMP_TRIPLE_TUPLE_ASSIGN
+#define MICROPY_COMP_TRIPLE_TUPLE_ASSIGN (0)
+#endif
+
 /*****************************************************************************/
 /* Internal debugging stuff                                                  */
 
@@ -380,6 +392,12 @@ typedef double mp_float_t;
 // Whether to support property object
 #ifndef MICROPY_PY_BUILTINS_PROPERTY
 #define MICROPY_PY_BUILTINS_PROPERTY (1)
+#endif
+
+// Whether to implement the start/stop/step attributes (readback) on
+// the "range" builtin type. Rarely used, and costs ~60 bytes (x86).
+#ifndef MICROPY_PY_BUILTINS_RANGE_ATTRS
+#define MICROPY_PY_BUILTINS_RANGE_ATTRS (1)
 #endif
 
 // Whether to support complete set of special methods

@@ -29,7 +29,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include <math.h>
 
 #include "py/scope.h"
 #include "py/emit.h"
@@ -84,8 +83,10 @@ typedef struct _compiler_t {
     emit_t *emit;                                   // current emitter
     const emit_method_table_t *emit_method_table;   // current emit method table
 
+    #if MICROPY_EMIT_INLINE_THUMB
     emit_inline_asm_t *emit_inline_asm;                                   // current emitter for inline asm
     const emit_inline_asm_method_table_t *emit_inline_asm_method_table;   // current emit method table for inline asm
+    #endif
 } compiler_t;
 
 STATIC void compile_syntax_error(compiler_t *comp, mp_parse_node_t pn, const char *msg) {
@@ -2163,7 +2164,8 @@ STATIC void compile_expr_stmt(compiler_t *comp, mp_parse_node_struct_t *pns) {
             }
         } else {
             assert(kind == PN_expr_stmt_assign); // should be
-            if (MP_PARSE_NODE_IS_STRUCT_KIND(pns1->nodes[0], PN_testlist_star_expr)
+            if (MICROPY_COMP_DOUBLE_TUPLE_ASSIGN
+                && MP_PARSE_NODE_IS_STRUCT_KIND(pns1->nodes[0], PN_testlist_star_expr)
                 && MP_PARSE_NODE_IS_STRUCT_KIND(pns->nodes[0], PN_testlist_star_expr)
                 && MP_PARSE_NODE_STRUCT_NUM_NODES((mp_parse_node_struct_t*)pns1->nodes[0]) == 2
                 && MP_PARSE_NODE_STRUCT_NUM_NODES((mp_parse_node_struct_t*)pns->nodes[0]) == 2) {
@@ -2180,7 +2182,8 @@ STATIC void compile_expr_stmt(compiler_t *comp, mp_parse_node_struct_t *pns) {
                 EMIT(rot_two);
                 c_assign(comp, pns0->nodes[0], ASSIGN_STORE); // lhs store
                 c_assign(comp, pns0->nodes[1], ASSIGN_STORE); // lhs store
-            } else if (MP_PARSE_NODE_IS_STRUCT_KIND(pns1->nodes[0], PN_testlist_star_expr)
+            } else if (MICROPY_COMP_TRIPLE_TUPLE_ASSIGN
+                && MP_PARSE_NODE_IS_STRUCT_KIND(pns1->nodes[0], PN_testlist_star_expr)
                 && MP_PARSE_NODE_IS_STRUCT_KIND(pns->nodes[0], PN_testlist_star_expr)
                 && MP_PARSE_NODE_STRUCT_NUM_NODES((mp_parse_node_struct_t*)pns1->nodes[0]) == 3
                 && MP_PARSE_NODE_STRUCT_NUM_NODES((mp_parse_node_struct_t*)pns->nodes[0]) == 3) {
@@ -3621,8 +3624,10 @@ mp_obj_t mp_compile(mp_parse_node_t pn, qstr source_file, uint emit_opt, bool is
     // compile pass 1
     comp->emit = emit_pass1_new();
     comp->emit_method_table = &emit_pass1_method_table;
+    #if MICROPY_EMIT_INLINE_THUMB
     comp->emit_inline_asm = NULL;
     comp->emit_inline_asm_method_table = NULL;
+    #endif
     uint max_num_labels = 0;
     for (scope_t *s = comp->scope_head; s != NULL && comp->compile_error == MP_OBJ_NULL; s = s->next) {
         if (false) {

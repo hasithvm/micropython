@@ -32,6 +32,8 @@
  ******************************************************************************/
 #define SIMPLELINK_SPAWN_TASK_PRIORITY              3
 #define SIMPLELINK_TASK_STACK_SIZE                  2048
+#define SL_STOP_TIMEOUT                             35
+#define SL_STOP_TIMEOUT_LONG                        255
 
 /******************************************************************************
  DEFINE TYPES
@@ -40,8 +42,7 @@ typedef enum {
     MODWLAN_OK = 0,
     MODWLAN_ERROR_INVALID_PARAMS = -1,
     MODWLAN_ERROR_TIMEOUT = -2,
-    MODWLAN_ERROR_UNKNOWN = -3
-
+    MODWLAN_ERROR_UNKNOWN = -3,
 }modwlan_Status_t;
 
 /******************************************************************************
@@ -55,12 +56,9 @@ extern _SlLockObj_t wlan_LockObj;
 extern void wlan_init0 (void);
 extern modwlan_Status_t wlan_sl_enable (SlWlanMode_t mode, const char *ssid, uint8_t ssid_len, uint8_t sec,
                                         const char *key, uint8_t key_len, uint8_t channel);
-extern void wlan_stop (void);
-extern void wlan_start (void);
-extern SlWlanMode_t wlan_get_mode (void);
+extern void wlan_first_start (void);
+extern void wlan_stop (uint32_t timeout);
 extern void wlan_get_mac (uint8_t *macAddress);
 extern void wlan_get_ip (uint32_t *ip);
-extern void wlan_set_pm_policy (uint8_t policy);
-extern void wlan_stop_servers (void);
 
 #endif /* MODWLAN_H_ */

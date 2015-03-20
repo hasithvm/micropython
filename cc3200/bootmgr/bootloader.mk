@@ -19,6 +19,7 @@ BOOT_CPPDEFINES = -Dgcc -DBOOTLOADER -DTARGET_IS_CC3200 -DSL_TINY
 BOOT_HAL_SRC_C = $(addprefix hal/,\
 	cpu.c \
 	interrupt.c \
+	pin.c \
 	prcm.c \
 	shamd5.c \
 	spi.c \
@@ -42,10 +43,6 @@ BOOT_CC3100_SRC_C = $(addprefix drivers/cc3100/,\
 
 BOOT_MISC_SRC_C = $(addprefix misc/,\
 	mperror.c \
-	)
-
-BOOT_MODS_SRC_C = $(addprefix mods/,\
-	pybwdt.c \
 	)
 
 BOOT_SL_SRC_C = $(addprefix simplelink/,\
@@ -72,8 +69,8 @@ BOOT_STM_SRC_C = $(addprefix stmhal/,\
 	string0.c \
 	)
 	
-OBJ  = $(addprefix $(BUILD)/, $(BOOT_HAL_SRC_C:.c=.o) $(BOOT_MODS_SRC_C:.c=.o) $(BOOT_SL_SRC_C:.c=.o) $(BOOT_CC3100_SRC_C:.c=.o) $(BOOT_UTIL_SRC_C:.c=.o))
-OBJ += $(addprefix $(BUILD)/, $(BOOT_MISC_SRC_C:.c=.o) $(BOOT_MAIN_SRC_C:.c=.o) $(BOOT_MAIN_SRC_S:.s=.o) $(BOOT_PY_SRC_C:.c=.o) $(BOOT_STM_SRC_C:.c=.o))
+OBJ  = $(addprefix $(BUILD)/, $(BOOT_HAL_SRC_C:.c=.o) $(BOOT_SL_SRC_C:.c=.o) $(BOOT_CC3100_SRC_C:.c=.o) $(BOOT_UTIL_SRC_C:.c=.o) $(BOOT_MISC_SRC_C:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(BOOT_MAIN_SRC_C:.c=.o) $(BOOT_MAIN_SRC_S:.s=.o) $(BOOT_PY_SRC_C:.c=.o) $(BOOT_STM_SRC_C:.c=.o))
 
 # Add the linker script
 LINKER_SCRIPT = bootmgr/bootmgr.lds

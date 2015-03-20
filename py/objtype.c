@@ -75,10 +75,10 @@ STATIC int instance_count_native_bases(const mp_obj_type_t *type, const mp_obj_t
             continue;
         }
         if (is_native_type(bt)) {
-            *last_native_base = items[i];
+            *last_native_base = bt;
             count++;
         } else {
-            count += instance_count_native_bases(items[i], last_native_base);
+            count += instance_count_native_bases(bt, last_native_base);
         }
     }
 
@@ -90,13 +90,15 @@ STATIC int instance_count_native_bases(const mp_obj_type_t *type, const mp_obj_t
 // http://python-history.blogspot.com/2010/06/method-resolution-order.html
 // https://www.python.org/download/releases/2.3/mro/
 //
-// will return MP_OBJ_NULL if not found
-// will return MP_OBJ_SENTINEL if special method was found in a native type base
-// via slot id (meth_offset). As there can be only one native base, it's known that it
-// applies to instance->subobj[0]. In most cases, we also don't need to know which type
-// it was - because instance->subobj[0] is of that type. The only exception is when
-// object is not yet constructed, then we need to know base native type to construct
-// instance->subobj[0]. This case is handled via instance_count_native_bases() though.
+// will keep lookup->dest[0]'s value (should be MP_OBJ_NULL on invocation) if attribute
+// is not found
+// will set lookup->dest[0] to MP_OBJ_SENTINEL if special method was found in a native
+// type base via slot id (as specified by lookup->meth_offset). As there can be only one
+// native base, it's known that it applies to instance->subobj[0]. In most cases, we also
+// don't need to know which type it was - because instance->subobj[0] is of that type.
+// The only exception is when object is not yet constructed, then we need to know base
+// native type to construct its instance->subobj[0] from. But this case is handled via
+// instance_count_native_bases(), which returns a native base which it saw.
 struct class_lookup_data {
     mp_obj_instance_t *obj;
     qstr attr;
@@ -129,14 +131,17 @@ STATIC void mp_obj_class_lookup(struct class_lookup_data  *lookup, const mp_obj_
             if (elem != NULL) {
                 lookup->dest[0] = elem->value;
                 if (lookup->is_type) {
-                    // If we look up class method, we need to pass original type there,
-                    // not type where we found a class method.
+                    // If we look up a class method, we need to return original type for which we
+                    // do a lookup, not a (base) type in which we found the class method.
                     const mp_obj_type_t *org_type = (const mp_obj_type_t*)lookup->obj;
                     instance_convert_return_attr(NULL, org_type, elem->value, lookup->dest);
-                } else if (lookup->obj != MP_OBJ_NULL && !lookup->is_type && is_native_type(type) && type != &mp_type_object /* object is not a real type */) {
-                    instance_convert_return_attr(lookup->obj->subobj[0], type, elem->value, lookup->dest);
                 } else {
-                    instance_convert_return_attr(lookup->obj, type, elem->value, lookup->dest);
+                    mp_obj_instance_t *obj = lookup->obj;
+                    if (obj != MP_OBJ_NULL && is_native_type(type) && type != &mp_type_object /* object is not a real type */) {
+                        // If we're dealing with native base class, then it applies to native sub-object
+                        obj = obj->subobj[0];
+                    }
+                    instance_convert_return_attr(obj, type, elem->value, lookup->dest);
                 }
 #if DEBUG_PRINT
                 printf("mp_obj_class_lookup: Returning: ");
@@ -147,8 +152,9 @@ STATIC void mp_obj_class_lookup(struct class_lookup_data  *lookup, const mp_obj_
             }
         }
 
-        // Try this for completeness, but all native methods should be statically defined
-        // in locals_dict, and would be handled by above.
+        // Previous code block takes care about attributes defined in .locals_dict,
+        // but some attributes of native types may be handled using .load_attr method,
+        // so make sure we try to lookup those too.
         if (lookup->obj != MP_OBJ_NULL && !lookup->is_type && is_native_type(type) && type != &mp_type_object /* object is not a real type */) {
             mp_load_method_maybe(lookup->obj->subobj[0], lookup->attr, lookup->dest);
             if (lookup->dest[0] != MP_OBJ_NULL) {
@@ -419,7 +425,7 @@ STATIC void instance_convert_return_attr(mp_obj_t self, const mp_obj_type_t *typ
         dest[0] = ((mp_obj_static_class_method_t*)member)->fun;
         dest[1] = (mp_obj_t)type;
     } else if (MP_OBJ_IS_TYPE(member, &mp_type_type)) {
-        // Don't try to bind types
+        // Don't try to bind types (even though they're callable)
         dest[0] = member;
     } else if (mp_obj_is_callable(member)) {
         // return a bound method, with self being this object

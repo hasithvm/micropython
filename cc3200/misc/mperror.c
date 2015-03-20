@@ -51,17 +51,27 @@
 /******************************************************************************
  DEFINE CONSTANTS
  ******************************************************************************/
-#define MPERROR_TOOGLE_MS                           (200)
-#define MPERROR_SIGNAL_ERROR_MS                     (2000)
+#define MPERROR_TOOGLE_MS                           (40)
+#define MPERROR_SIGNAL_ERROR_MS                     (1000)
 #define MPERROR_HEARTBEAT_ON_MS                     (80)
-#define MPERROR_HEARTBEAT_OFF_MS                    (2920)
-
-#define MPERROR_SAFE_BOOT_REG_IDX                   (0)
+#define MPERROR_HEARTBEAT_OFF_MS                    (4920)
 
 /******************************************************************************
  DECLARE PRIVATE DATA
  ******************************************************************************/
-static bool mperror_heartbeat_enabled;
+struct mperror_heart_beat {
+    uint32_t off_time;
+    uint32_t on_time;
+    bool beating;
+    bool enabled;
+} mperror_heart_beat;
+
+/******************************************************************************
+ DEFINE PRIVATE FUNCTIONS
+ ******************************************************************************/
+STATIC void mperror_heartbeat_switch_off (void) {
+    MAP_GPIOPinWrite(MICROPY_SYS_LED_PORT, MICROPY_SYS_LED_PORT_PIN, 0);
+}
 
 /******************************************************************************
  DEFINE PUBLIC FUNCTIONS
@@ -84,6 +94,34 @@ void mperror_init0 (void) {
     MAP_PinConfigSet(MICROPY_SAFE_BOOT_PIN_NUM, PIN_STRENGTH_4MA, PIN_TYPE_STD_PD);
     MAP_GPIODirModeSet(MICROPY_SAFE_BOOT_PORT, MICROPY_SAFE_BOOT_PORT_PIN, GPIO_DIR_MODE_IN);
 #endif
+
+    mperror_heart_beat.on_time = 0;
+    mperror_heart_beat.off_time = 0;
+    mperror_heart_beat.beating = false;
+}
+
+void mperror_bootloader_check_reset_cause (void) {
+    // if we are recovering from a WDT reset, trigger
+    // a hibernate cycle for a clean boot
+    if (MAP_PRCMSysResetCauseGet() == PRCM_WDT_RESET) {
+        HWREG(0x400F70B8) = 1;
+        UtilsDelay(800000/5);
+        HWREG(0x400F70B0) = 1;
+        UtilsDelay(800000/5);
+
+        HWREG(0x4402E16C) |= 0x2;
+        UtilsDelay(800);
+        HWREG(0x4402F024) &= 0xF7FFFFFF;
+
+        // since the reset cause will be changed, we must store the right reason
+        // so that the application knows we booting the next time
+        PRCMSignalWDTReset();
+
+        MAP_PRCMHibernateWakeupSourceEnable(PRCM_HIB_SLOW_CLK_CTR);
+        // set the sleep interval to 10ms
+        MAP_PRCMHibernateIntervalSet(330);
+        MAP_PRCMHibernateEnter();
+    }
 }
 
 void mperror_deinit_sfe_pin (void) {
@@ -93,60 +131,37 @@ void mperror_deinit_sfe_pin (void) {
 
 void mperror_signal_error (void) {
     uint32_t count = 0;
-    while ((MPERROR_TOOGLE_MS * count++) > MPERROR_SIGNAL_ERROR_MS) {
+    while ((MPERROR_TOOGLE_MS * count++) < MPERROR_SIGNAL_ERROR_MS) {
         // toogle the led
         MAP_GPIOPinWrite(MICROPY_SYS_LED_PORT, MICROPY_SYS_LED_PORT_PIN, ~MAP_GPIOPinRead(MICROPY_SYS_LED_PORT, MICROPY_SYS_LED_PORT_PIN));
         UtilsDelay(UTILS_DELAY_US_TO_COUNT(MPERROR_TOOGLE_MS * 1000));
     }
 }
 
-void mperror_request_safe_boot (void) {
-    MAP_PRCMOCRRegisterWrite(MPERROR_SAFE_BOOT_REG_IDX, 1);
-}
-
-void mperror_clear_safe_boot (void) {
-    MAP_PRCMOCRRegisterWrite(MPERROR_SAFE_BOOT_REG_IDX, 0);
-}
-
-// returns the last state of the safe boot request and clears the register
-bool mperror_safe_boot_requested (void) {
-    bool ret = MAP_PRCMOCRRegisterRead(MPERROR_SAFE_BOOT_REG_IDX);
-    mperror_clear_safe_boot();
-    return ret;
-}
-
 void mperror_enable_heartbeat (void) {
-    mperror_heartbeat_enabled = true;
+    mperror_heart_beat.enabled = true;
 }
 
 void mperror_disable_heartbeat (void) {
-    mperror_heartbeat_enabled = false;
-    mperror_heartbeat_off();
+    mperror_heart_beat.enabled = false;
+    mperror_heartbeat_switch_off();
 }
 
 void mperror_heartbeat_signal (void) {
-    static uint off_start = 0;
-    static uint on_start = 0;
-    static bool beat = false;
-
-    if (mperror_heartbeat_enabled) {
-        if (!beat) {
-            if ((on_start = HAL_GetTick()) - off_start > MPERROR_HEARTBEAT_OFF_MS) {
+    if (mperror_heart_beat.enabled) {
+        if (!mperror_heart_beat.beating) {
+            if ((mperror_heart_beat.on_time = HAL_GetTick()) - mperror_heart_beat.off_time > MPERROR_HEARTBEAT_OFF_MS) {
                 MAP_GPIOPinWrite(MICROPY_SYS_LED_PORT, MICROPY_SYS_LED_PORT_PIN, MICROPY_SYS_LED_PORT_PIN);
-                beat = true;
+                mperror_heart_beat.beating = true;
             }
         }
         else {
-            if ((off_start = HAL_GetTick()) - on_start > MPERROR_HEARTBEAT_ON_MS) {
-                mperror_heartbeat_off();
-                beat = false;
+            if ((mperror_heart_beat.off_time = HAL_GetTick()) - mperror_heart_beat.on_time > MPERROR_HEARTBEAT_ON_MS) {
+                mperror_heartbeat_switch_off();
+                mperror_heart_beat.beating = false;
             }
         }
     }
-}
-
-void mperror_heartbeat_off (void) {
-    MAP_GPIOPinWrite(MICROPY_SYS_LED_PORT, MICROPY_SYS_LED_PORT_PIN, 0);
 }
 
 void NORETURN __fatal_error(const char *msg) {
@@ -179,3 +194,38 @@ void nlr_jump_fail(void *val) {
     __fatal_error(NULL);
 #endif
 }
+
+#ifndef BOOTLOADER
+/******************************************************************************/
+// Micro Python bindings
+
+/// \function enable()
+/// Enables the heartbeat signal
+STATIC mp_obj_t pyb_enable_heartbeat(mp_obj_t self) {
+    mperror_enable_heartbeat ();
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(pyb_enable_heartbeat_obj, pyb_enable_heartbeat);
+
+/// \function disable()
+/// Disables the heartbeat signal
+STATIC mp_obj_t pyb_disable_heartbeat(mp_obj_t self) {
+    mperror_disable_heartbeat ();
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(pyb_disable_heartbeat_obj, pyb_disable_heartbeat);
+
+STATIC const mp_map_elem_t pyb_heartbeat_locals_dict_table[] = {
+    { MP_OBJ_NEW_QSTR(MP_QSTR_enable),    (mp_obj_t)&pyb_enable_heartbeat_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_disable),   (mp_obj_t)&pyb_disable_heartbeat_obj },
+};
+STATIC MP_DEFINE_CONST_DICT(pyb_heartbeat_locals_dict, pyb_heartbeat_locals_dict_table);
+
+static const mp_obj_type_t pyb_heartbeat_type = {
+    { &mp_type_type },
+    .name = MP_QSTR_HeartBeat,
+    .locals_dict = (mp_obj_t)&pyb_heartbeat_locals_dict,
+};
+
+const mp_obj_base_t pyb_heartbeat_obj = {&pyb_heartbeat_type};
+#endif

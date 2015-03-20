@@ -46,8 +46,6 @@ SECTIONS
         . = ALIGN(8);
     } > SRAMB
 
-    _ertos_heap = ORIGIN(SRAMB) + LENGTH(SRAMB);
-
     .text :
     {
         _text = .;
@@ -65,13 +63,8 @@ SECTIONS
         __exidx_end = .;
         _etext = .;
     } > SRAM
-    
-    __init_data = .;
-    
-    /* used by the start-up to initialize data */
-    _sidata = LOADADDR(.data);
 
-    .data : AT(__init_data)
+    .data :
     {
         . = ALIGN(8);
         _data = .;
@@ -88,6 +81,17 @@ SECTIONS
         *(COMMON)
         . = ALIGN(8);
         _ebss = .;
+    } > SRAM
+
+    /* place here functions that are only called during boot up, */
+    /* that way, we can re-use this area for the micropython heap */
+    .boot :
+    {
+        . = ALIGN(8);
+        _boot = .;
+        *(.boot*)
+        . = ALIGN(8);
+        _eboot = .;
     } > SRAM
      
     /* allocate the micropython heap */

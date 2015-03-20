@@ -31,7 +31,7 @@
  DEFINE CONSTANTS
  ******************************************************************************/
 #define SERVERS_PRIORITY                        2
-#define SERVERS_STACK_SIZE                      960
+#define SERVERS_STACK_SIZE                      944
 
 #define SERVERS_SSID_LEN_MAX                    16
 #define SERVERS_KEY_LEN_MAX                     16
@@ -60,10 +60,10 @@ extern char *servers_pass;
  DECLARE PUBLIC FUNCTIONS
  ******************************************************************************/
 extern void TASK_Servers (void *pvParameters);
-extern void servers_enable (void);
-extern void servers_disable (void);
+extern void servers_start (void);
+extern void servers_stop (void);
 extern bool servers_are_enabled (void);
-extern void servers_close_socket (_i16 *sd);
-extern void servers_set_user_pass (char *user, char *pass);
+extern void servers_close_socket (int16_t *sd);
+extern void servers_set_login (char *user, char *pass);
 
 #endif /* SERVERSTASK_H_ */

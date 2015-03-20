@@ -51,14 +51,13 @@
 #include "utils.h"
 #include "cc3200_hal.h"
 #include "debug.h"
-#include "pybwdt.h"
 #include "mperror.h"
 
 
 //*****************************************************************************
 // Local Constants
 //*****************************************************************************
-#define SL_STOP_TIMEOUT                     250
+#define SL_STOP_TIMEOUT                     35
 #define BOOTMGR_HASH_ALGO                   SHAMD5_ALGO_MD5
 #define BOOTMGR_HASH_SIZE                   32
 #define BOOTMGR_BUFF_SIZE                   512
@@ -66,8 +65,8 @@
 #define BOOTMGR_WAIT_SAFE_MODE_MS           1600
 #define BOOTMGR_WAIT_SAFE_MODE_TOOGLE_MS    200
 
-#define BOOTMGR_SAFE_MODE_ENTER_MS          700
-#define BOOTMGR_SAFE_MODE_ENTER_TOOGLE_MS   70
+#define BOOTMGR_SAFE_MODE_ENTER_MS          800
+#define BOOTMGR_SAFE_MODE_ENTER_TOOGLE_MS   80
 
 //*****************************************************************************
 // Exported functions declarations
@@ -149,7 +148,7 @@ static void bootmgr_board_init(void) {
     // Mandatory MCU Initialization
     PRCMCC3200MCUInit();
 
-    pybwdt_check_reset_cause();
+    mperror_bootloader_check_reset_cause();
 
     // Enable the Data Hashing Engine
     HASH_Init();
@@ -157,9 +156,8 @@ static void bootmgr_board_init(void) {
     // Init the system led and the system switch
     mperror_init0();
 
-    // clear the safe boot request, since we should not trust
-    // the register's state after reset
-    mperror_clear_safe_boot();
+    // clear the safe boot flag, since we can't trust its content after reset
+    PRCMClearSafeBootRequest();
 }
 
 //*****************************************************************************
@@ -267,7 +265,7 @@ static void bootmgr_image_loader(sBootInfo_t *psBootInfo) {
          // turn the led off
          MAP_GPIOPinWrite(MICROPY_SYS_LED_PORT, MICROPY_SYS_LED_PORT_PIN, 0);
          // request a safe boot to the application
-         mperror_request_safe_boot();
+         PRCMRequestSafeBoot();
     }
     // do we have a new update image that needs to be verified?
     else if ((psBootInfo->ActiveImg == IMG_ACT_UPDATE) && (psBootInfo->Status == IMG_STATUS_CHECK)) {
@@ -308,7 +306,7 @@ int main (void) {
     bootmgr_board_init();
 
     // start simplelink since we need it to access the sflash
-    sl_Start(NULL, NULL, NULL);
+    sl_Start(0, 0, 0);
 
     // if a boot info file is found, load it, else, create a new one with the default boot info
     if (!sl_FsOpen((unsigned char *)IMG_BOOT_INFO, FS_MODE_OPEN_READ, NULL, &fhandle)) {
