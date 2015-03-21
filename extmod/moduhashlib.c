@@ -85,36 +85,28 @@ MP_DEFINE_CONST_FUN_OBJ_1(hash_hexdigest_obj, hash_sha256_hexdigest);
 
 /* *************************************************** */
 
-STATIC mp_obj_t hash_hmacsha1(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    STATIC const mp_arg_t allowed_args[] = {
-        { MP_QSTR_data,     MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-        { MP_QSTR_key,      MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-    };
-
-    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
-
+STATIC mp_obj_t hash_hmacsha1(mp_obj_t *data_obj, mp_obj_t *key_obj) {
     // get the data and key
-    mp_uint_t data_len;
-    const unsigned char *data = (unsigned char*)mp_obj_str_get_data(args[0].u_obj, &data_len);
+    mp_buffer_info_t data;
+    mp_get_buffer_raise(data_obj, &data, MP_BUFFER_READ);
 
-    mp_uint_t key_len;
-    const unsigned char *key = (unsigned char*)mp_obj_str_get_data(args[1].u_obj, &key_len);
+    mp_buffer_info_t key;
+    mp_get_buffer_raise(key_obj, &key, MP_BUFFER_READ);
 
     vstr_t tmp_key;
-    vstr_init_len(&tmp_key, key_len);
+    vstr_init_len(&tmp_key, key.len);
 
-    memcpy(tmp_key.buf, key, key_len + 1);
+    memcpy(tmp_key.buf, key.buf, key.len);
 
     vstr_t vstr;
     vstr_init_len(&vstr, HMACSHA1_DIGEST_SIZE);
-    hmac_sha1((unsigned char*)tmp_key.buf, key_len, data, data_len, (byte*)vstr.buf);
+    hmac_sha1((unsigned char*)tmp_key.buf, key.len, data.buf, data.len, (byte*)vstr.buf);
 
     vstr_free(&tmp_key);
 
     return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
 }
-MP_DEFINE_CONST_FUN_OBJ_KW(hash_hmacsha1_obj, 2, hash_hmacsha1);
+MP_DEFINE_CONST_FUN_OBJ_2(hash_hmacsha1_obj, hash_hmacsha1);
 
 
 
