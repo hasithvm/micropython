@@ -545,6 +545,7 @@ Q(update)
 Q(digest)
 Q(hexdigest)
 Q(sha256)
+Q(hmacsha1)
 #endif
 
 #if MICROPY_PY_UBINASCII
