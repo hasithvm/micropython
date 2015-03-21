@@ -62,7 +62,7 @@
 #include "utils.h"
 #include "gccollect.h"
 #include "mperror.h"
-
+#include "pyspi.h"
 
 #ifdef DEBUG
 extern OsiTaskHandle    mpTaskHandle;
@@ -360,6 +360,8 @@ STATIC const mp_map_elem_t pyb_module_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_ADC),                 (mp_obj_t)&pyb_adc_type },
     { MP_OBJ_NEW_QSTR(MP_QSTR_I2C),                 (mp_obj_t)&pyb_i2c_type },
     { MP_OBJ_NEW_QSTR(MP_QSTR_UART),                (mp_obj_t)&pyb_uart_type },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_SPI),                (mp_obj_t)&proxima_spi_type },
+
 
 #if MICROPY_HW_HAS_SDCARD
     { MP_OBJ_NEW_QSTR(MP_QSTR_SD),                  (mp_obj_t)&pyb_sd_type },

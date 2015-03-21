@@ -20,6 +20,8 @@ APP_INC += -I$(BUILD)/genhdr
 APP_INC += -I../lib/fatfs
 APP_INC += -I../lib/mp-readline
 APP_INC += -I../stmhal
+APP_INC += -Iplatform
+
 
 APP_CPPDEFINES = -Dgcc -DTARGET_IS_CC3200 -DSL_FULL -DUSE_FREERTOS
 
@@ -91,6 +93,8 @@ APP_MODS_SRC_C = $(addprefix mods/,\
 	pybsystick.c \
 	pybuart.c \
 	pybwdt.c \
+	pyspi.c\
+	devicectl.c\
 	)
 
 APP_CC3100_SRC_C = $(addprefix drivers/cc3100/src/,\
