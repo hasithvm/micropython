@@ -14,6 +14,7 @@
 #include "pin.h"
 #include "prcm.h"
 #include "spi.h"
+#include "gpio.h"
 #include "mpexception.h"
 #include "devicectl.h"
 #include "proxima.h"
@@ -37,6 +38,7 @@ typedef struct {
 #define PROXIMA_SPI_MODE3   3
 
 
+void proxima_spi_select(uint slave);
 
 
 ///////////////////////////Proxima bindings///////////////////////////////////////
@@ -90,17 +92,19 @@ int proxima_spi_init(uint mode, uint clkrate, uint framesize)
         MAP_PinTypeSPI(IF_GSPI_CLK_PIN, PIN_MODE_7);
 
         // setup SEL pins
-        MAP_PinTypeGPIO(IF_GSPI_MISO_PIN, PIN_MODE_0, false);
-        MAP_PinTypeGPIO(IF_GSPI_CLK_PIN, PIN_MODE_0, false);
-        MAP_PinTypeGPIO(IF_GSPI_MOSI_PIN, PIN_MODE_0, false);
+        MAP_PinTypeGPIO(IF_GSPI_SEL0_PIN, PIN_MODE_0, false);
+        MAP_PinTypeGPIO(IF_GSPI_SEL1_PIN, PIN_MODE_0, false);
+        MAP_PinTypeGPIO(IF_GSPI_SEL2_PIN, PIN_MODE_0, false);
 
         // flip them into output mode
-        MAP_PinDirModeSet(IF_GSPI_SEL0_PIN, PIN_DIR_MODE_OUT);
-        MAP_PinDirModeSet(IF_GSPI_SEL1_PIN, PIN_DIR_MODE_OUT);
-        MAP_PinDirModeSet(IF_GSPI_SEL2_PIN, PIN_DIR_MODE_OUT);
-       
+        MAP_GPIODirModeSet(GPIOA0_BASE, _BV(0), GPIO_DIR_MODE_OUT);
+        MAP_GPIODirModeSet(GPIOA2_BASE, _BV(6), GPIO_DIR_MODE_OUT);
+        MAP_GPIODirModeSet(GPIOA3_BASE, _BV(6), GPIO_DIR_MODE_OUT);
+ 
         // enable the SPI peripheral
         MAP_SPIEnable(GSPI_BASE);
+
+        proxima_spi_select(0);
 
         return 0;
     }
@@ -109,14 +113,15 @@ int proxima_spi_init(uint mode, uint clkrate, uint framesize)
         return -1;
     }
 }
+
 void proxima_spi_select(uint slave)
 {
-        if (getControlStatus() == CONTROL_ASSERTED)
+    if (getControlStatus() == CONTROL_ASSERTED)
     {
         // assert the correct slave
-        MAP_GPIOPinWrite(GPIOA0_BASE, _BV(0), slave & 0x01);
-        MAP_GPIOPinWrite(GPIOA2_BASE, _BV(6), ((slave >> 1) & 0x01));
-        MAP_GPIOPinWrite(GPIOA3_BASE, _BV(6), ((slave >> 2) & 0x01));
+        MAP_GPIOPinWrite(GPIOA0_BASE, _BV(0), (slave & 0x01) ? _BV(0) : 0);
+        MAP_GPIOPinWrite(GPIOA2_BASE, _BV(6), ((slave >> 1) & 0x01) ? _BV(6) : 0);
+        MAP_GPIOPinWrite(GPIOA3_BASE, _BV(6), ((slave >> 2) & 0x01) ? _BV(6) : 0);
     }
 }
 
@@ -183,10 +188,10 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(proxima_mp_spi_read_obj, proxima_mp_spi_read);
 STATIC mp_obj_t proxima_mp_spi_write(mp_obj_t self_in, mp_obj_t obj_in)
 {
     mp_buffer_info_t buf;
-    uint8_t tmp;
+    uint32_t tmp;
     proxima_spi_obj_t* spiobj = (proxima_spi_obj_t*)self_in;
 
-    pyb_buf_get_for_send(obj_in, &buf, &tmp);
+    pyb_buf_get_for_send(obj_in, &buf, (byte*)&tmp);
     proxima_spi_transfer(spiobj->slave, NULL,(uint8_t*)buf.buf, buf.len, spiobj->autoselect);
     return mp_const_none;
 }
@@ -211,7 +216,18 @@ STATIC mp_obj_t proxima_mp_spi_init(mp_obj_t self_in)
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(proxima_mp_spi_init_obj, proxima_mp_spi_init);
 
 
+STATIC mp_obj_t proxima_mp_spi_select(mp_obj_t self_in, mp_obj_t select)
+{
+    (void)self_in;
 
+    mp_uint_t id = mp_obj_get_int(select);
+
+    proxima_spi_select(id);
+
+    return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(proxima_mp_spi_select_obj, proxima_mp_spi_select);
 
 
 STATIC mp_obj_t proxima_mp_spi_deinit(mp_obj_t self_in) {
@@ -270,8 +286,9 @@ STATIC const mp_map_elem_t proxima_spi_locals_dict_table[] = {
     // instance methods
     { MP_OBJ_NEW_QSTR(MP_QSTR_open),         (mp_obj_t)&proxima_mp_spi_init_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_close),         (mp_obj_t)&proxima_mp_spi_deinit_obj},
-    { MP_OBJ_NEW_QSTR(MP_QSTR_send),         (mp_obj_t)&proxima_mp_spi_read_obj},
-    { MP_OBJ_NEW_QSTR(MP_QSTR_receive),         (mp_obj_t)&proxima_mp_spi_write_obj},
+    { MP_OBJ_NEW_QSTR(MP_QSTR_receive),         (mp_obj_t)&proxima_mp_spi_read_obj},
+    { MP_OBJ_NEW_QSTR(MP_QSTR_send),         (mp_obj_t)&proxima_mp_spi_write_obj},
+    { MP_OBJ_NEW_QSTR(MP_QSTR_select),         (mp_obj_t)&proxima_mp_spi_select_obj},
 };
 STATIC MP_DEFINE_CONST_DICT(proxima_spi_locals_dict, proxima_spi_locals_dict_table);
 const mp_obj_type_t proxima_spi_type = {
@@ -281,3 +298,4 @@ const mp_obj_type_t proxima_spi_type = {
     .make_new = proxima_mp_spi_make_new,
     .locals_dict = (mp_obj_t)&proxima_spi_locals_dict,
 };
+
