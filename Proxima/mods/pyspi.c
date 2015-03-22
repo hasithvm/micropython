@@ -53,7 +53,11 @@ int proxima_spi_init(uint mode, uint clkrate, uint framesize)
     {
 
         MAP_PRCMPeripheralClkEnable(PRCM_GSPI,PRCM_RUN_MODE_CLK);
+        
+        MAP_PRCMPeripheralReset(PRCM_GSPI);
         MAP_SPIReset(GSPI_BASE);
+
+
         switch (framesize)
         {
 
