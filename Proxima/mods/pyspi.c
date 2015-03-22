@@ -37,12 +37,6 @@ typedef struct {
 #define PROXIMA_SPI_MODE3   3
 
 
-STATIC const mp_arg_t proxima_spi_ctor_args[] = {
-    { MP_QSTR_mode,     MP_ARG_KW_ONLY | MP_ARG_INT,  {.u_int  = PROXIMA_SPI_MODE0}},
-    { MP_QSTR_speed, MP_ARG_KW_ONLY  | MP_ARG_INT,  {.u_int  = 5000000} },
-    { MP_QSTR_framesize, MP_ARG_KW_ONLY  | MP_ARG_INT,  {.u_int  = 8} },
-    { MP_QSTR_slave, MP_ARG_KW_ONLY  | MP_ARG_INT,  {.u_int  = 1} },
-    { MP_QSTR_autoselect, MP_ARG_KW_ONLY  | MP_ARG_INT,  {.u_int  = 1} },
 
 };
 
@@ -223,6 +217,14 @@ STATIC mp_obj_t proxima_mp_spi_deinit(mp_obj_t self_in) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(proxima_mp_spi_deinit_obj, proxima_mp_spi_deinit);
 
 
+
+STATIC const mp_arg_t proxima_spi_ctor_args[] = {
+    { MP_QSTR_mode,     MP_ARG_KW_ONLY | MP_ARG_INT,  {.u_int  = PROXIMA_SPI_MODE0}},
+    { MP_QSTR_speed, MP_ARG_KW_ONLY  | MP_ARG_INT,  {.u_int  = 5000000} },
+    { MP_QSTR_framesize, MP_ARG_KW_ONLY  | MP_ARG_INT,  {.u_int  = 8} },
+    { MP_QSTR_slave, MP_ARG_KW_ONLY  | MP_ARG_INT,  {.u_int  = 1} },
+    { MP_QSTR_autoselect, MP_ARG_KW_ONLY  | MP_ARG_INT,  {.u_int  = 1} },
+
 STATIC mp_obj_t proxima_mp_spi_make_new(mp_obj_t type_in, mp_uint_t n_args, mp_uint_t n_kw, const mp_obj_t *args) {
     
 
@@ -242,9 +244,7 @@ STATIC mp_obj_t proxima_mp_spi_make_new(mp_obj_t type_in, mp_uint_t n_args, mp_u
         self->framesize = params[2].u_int;
         self->slave = params[3].u_int;
         self->autoselect = params[4].u_int;
-    }
-
-   
+ 
 
 
 

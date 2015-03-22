@@ -57,7 +57,7 @@ control_status_t deassertControl()
 {
     if (m_currentStatus != 0xFF)
     {
-        MAP_GPIOPinWrite(GPIOA0_BASE, _BV(3), 1);
+        MAP_GPIOPinWrite(GPIOA0_BASE, _BV(3), _BV(3));
         m_currentStatus = 0;
     }
     return CONTROL_IDLE;
