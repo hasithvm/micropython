@@ -83,11 +83,23 @@ STATIC mp_uint_t get_fmt_num(const char **p) {
 
 STATIC uint calcsize_items(const char *fmt) {
     uint cnt = 0;
+    uint tmp = 0;
+
+    get_fmt_type(&fmt);
+
     while (*fmt) {
-        // TODO supports size spec only for "s"
-        if (!unichar_isdigit(*fmt++)) {
+        if (!unichar_isdigit(*fmt)) {
             cnt++;
+        } else {
+            tmp = get_fmt_num(&fmt);
+            if (*fmt == 's') {
+                cnt++;
+            } else {
+                cnt += tmp;
+            }
         }
+
+        fmt++;
     }
     return cnt;
 }
@@ -102,16 +114,12 @@ STATIC mp_obj_t struct_calcsize(mp_obj_t fmt_in) {
         if (unichar_isdigit(*fmt)) {
             cnt = get_fmt_num(&fmt);
         }
-        if (cnt > 1) {
-            // TODO: count spec support only for string len
-            assert(*fmt == 's');
-        }
 
         mp_uint_t sz;
         if (*fmt == 's') {
             sz = cnt;
         } else {
-            sz = (mp_uint_t)mp_binary_get_size(fmt_type, *fmt, &align);
+            sz = (mp_uint_t)mp_binary_get_size(fmt_type, *fmt, &align) * cnt;
         }
         // TODO
         assert(sz != (mp_uint_t)-1);
@@ -128,6 +136,7 @@ STATIC mp_obj_t struct_unpack(mp_obj_t fmt_in, mp_obj_t data_in) {
     const char *fmt = mp_obj_str_get_str(fmt_in);
     char fmt_type = get_fmt_type(&fmt);
     uint size = calcsize_items(fmt);
+
     mp_obj_tuple_t *res = mp_obj_new_tuple(size, NULL);
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(data_in, &bufinfo, MP_BUFFER_READ);
@@ -138,19 +147,20 @@ STATIC mp_obj_t struct_unpack(mp_obj_t fmt_in, mp_obj_t data_in) {
         if (unichar_isdigit(*fmt)) {
             sz = get_fmt_num(&fmt);
         }
-        if (sz > 1) {
-            // TODO: size spec support only for string len
-            assert(*fmt == 's');
-        }
+
         mp_obj_t item;
         if (*fmt == 's') {
             item = mp_obj_new_bytes(p, sz);
             p += sz;
-            fmt++;
+            res->items[i] = item;
         } else {
-            item = mp_binary_get_val(fmt_type, *fmt++, &p);
+            for(; sz; i++, sz--) {
+                res->items[i] = mp_binary_get_val(fmt_type, *fmt, &p);
+            }
+            i--;
         }
-        res->items[i] = item;
+
+        fmt++;
     }
     return res;
 }

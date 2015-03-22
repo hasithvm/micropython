@@ -33,44 +33,45 @@
 #if MICROPY_PY_UHASHLIB
 
 #include "crypto-algorithms/sha256.h"
+#include "crypto-algorithms/hmacsha1.h"
 
 typedef struct _mp_obj_hash_t {
     mp_obj_base_t base;
     char state[0];
 } mp_obj_hash_t;
 
-STATIC mp_obj_t hash_update(mp_obj_t self_in, mp_obj_t arg);
+STATIC mp_obj_t hash_sha256_update(mp_obj_t self_in, mp_obj_t arg);
 
-STATIC mp_obj_t hash_make_new(mp_obj_t type_in, mp_uint_t n_args, mp_uint_t n_kw, const mp_obj_t *args) {
+STATIC mp_obj_t hash_sha256_make_new(mp_obj_t type_in, mp_uint_t n_args, mp_uint_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 0, 1, false);
     mp_obj_hash_t *o = m_new_obj_var(mp_obj_hash_t, char, sizeof(SHA256_CTX));
     o->base.type = type_in;
     sha256_init((SHA256_CTX*)o->state);
     if (n_args == 1) {
-        hash_update(o, args[0]);
+        hash_sha256_update(o, args[0]);
     }
     return o;
 }
 
-STATIC mp_obj_t hash_update(mp_obj_t self_in, mp_obj_t arg) {
+STATIC mp_obj_t hash_sha256_update(mp_obj_t self_in, mp_obj_t arg) {
     mp_obj_hash_t *self = self_in;
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(arg, &bufinfo, MP_BUFFER_READ);
     sha256_update((SHA256_CTX*)self->state, bufinfo.buf, bufinfo.len);
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_2(hash_update_obj, hash_update);
+MP_DEFINE_CONST_FUN_OBJ_2(hash_update_obj, hash_sha256_update);
 
-STATIC mp_obj_t hash_digest(mp_obj_t self_in) {
+STATIC mp_obj_t hash_sha256_digest(mp_obj_t self_in) {
     mp_obj_hash_t *self = self_in;
     vstr_t vstr;
     vstr_init_len(&vstr, SHA256_BLOCK_SIZE);
     sha256_final((SHA256_CTX*)self->state, (byte*)vstr.buf);
     return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
 }
-MP_DEFINE_CONST_FUN_OBJ_1(hash_digest_obj, hash_digest);
+MP_DEFINE_CONST_FUN_OBJ_1(hash_digest_obj, hash_sha256_digest);
 
-STATIC mp_obj_t hash_hexdigest(mp_obj_t self_in) {
+STATIC mp_obj_t hash_sha256_hexdigest(mp_obj_t self_in) {
     (void)self_in;
     mp_not_implemented("");
 #if 0
@@ -80,7 +81,34 @@ STATIC mp_obj_t hash_hexdigest(mp_obj_t self_in) {
     return mp_obj_new_str((char*)hash, SHA256_BLOCK_SIZE, false);
 #endif
 }
-MP_DEFINE_CONST_FUN_OBJ_1(hash_hexdigest_obj, hash_hexdigest);
+MP_DEFINE_CONST_FUN_OBJ_1(hash_hexdigest_obj, hash_sha256_hexdigest);
+
+/* *************************************************** */
+
+STATIC mp_obj_t hash_hmacsha1(mp_obj_t *data_obj, mp_obj_t *key_obj) {
+    // get the data and key
+    mp_buffer_info_t data;
+    mp_get_buffer_raise(data_obj, &data, MP_BUFFER_READ);
+
+    mp_buffer_info_t key;
+    mp_get_buffer_raise(key_obj, &key, MP_BUFFER_READ);
+
+    vstr_t tmp_key;
+    vstr_init_len(&tmp_key, key.len);
+
+    memcpy(tmp_key.buf, key.buf, key.len);
+
+    vstr_t vstr;
+    vstr_init_len(&vstr, HMACSHA1_DIGEST_SIZE);
+    hmac_sha1((unsigned char*)tmp_key.buf, key.len, data.buf, data.len, (byte*)vstr.buf);
+
+    vstr_free(&tmp_key);
+
+    return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
+}
+MP_DEFINE_CONST_FUN_OBJ_2(hash_hmacsha1_obj, hash_hmacsha1);
+
+
 
 STATIC const mp_map_elem_t hash_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_update), (mp_obj_t) &hash_update_obj },
@@ -93,13 +121,14 @@ STATIC MP_DEFINE_CONST_DICT(hash_locals_dict, hash_locals_dict_table);
 STATIC const mp_obj_type_t sha256_type = {
     { &mp_type_type },
     .name = MP_QSTR_sha256,
-    .make_new = hash_make_new,
+    .make_new = hash_sha256_make_new,
     .locals_dict = (mp_obj_t)&hash_locals_dict,
 };
 
 STATIC const mp_map_elem_t mp_module_hashlib_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_uhashlib) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_sha256), (mp_obj_t)&sha256_type },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_hmacsha1), (mp_obj_t)&hash_hmacsha1_obj },
 };
 
 STATIC MP_DEFINE_CONST_DICT(mp_module_hashlib_globals, mp_module_hashlib_globals_table);
@@ -111,5 +140,6 @@ const mp_obj_module_t mp_module_uhashlib = {
 };
 
 #include "crypto-algorithms/sha256.c"
+#include "crypto-algorithms/hmacsha1.c"
 
 #endif //MICROPY_PY_UHASHLIB
