@@ -551,4 +551,6 @@ Q(hmacsha1)
 #if MICROPY_PY_UBINASCII
 Q(ubinascii)
 Q(hexlify)
+Q(b64encode)
+Q(b64decode)
 #endif
