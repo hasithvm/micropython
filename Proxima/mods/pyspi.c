@@ -24,7 +24,7 @@
 typedef struct {
     mp_obj_base_t base;
     uint mode;
-    uint baudrate;
+    uint speed;
     uint slave;
     uint framesize;
     uint autoselect;
@@ -203,7 +203,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(proxima_mp_spi_write_obj, proxima_mp_spi_write)
 STATIC mp_obj_t proxima_mp_spi_init(mp_obj_t self_in)
 {
     proxima_spi_obj_t* self = (proxima_spi_obj_t*) self_in;
-    if (proxima_spi_init(self->mode, self->baudrate, self->framesize) != 0)
+    if (proxima_spi_init(self->mode, self->speed, self->framesize) != 0)
     {
         //TODO: raise an error here
     }
@@ -237,10 +237,11 @@ STATIC mp_obj_t proxima_mp_spi_make_new(mp_obj_t type_in, mp_uint_t n_args, mp_u
         mp_map_init_fixed_table(&kw_args, n_kw, args + n_args);
         mp_arg_val_t params[MP_ARRAY_SIZE(proxima_spi_ctor_args)];
         mp_arg_parse_all(n_args, args, &kw_args, MP_ARRAY_SIZE(proxima_spi_ctor_args), proxima_spi_ctor_args, params);
-        self->mode = params[1].u_int;
-        self->baudrate = params[2].u_int;
-        self->framesize = params[3].u_int;
-        self->autoselect = 1;
+        self->mode = params[0].u_int;
+        self->speed = params[1].u_int;
+        self->framesize = params[2].u_int;
+        self->slave = params[3].u_int;
+        self->autoselect = params[4].u_int;
     }
 
    
@@ -255,7 +256,7 @@ STATIC void proxima_mp_spi_print(void (*print)(void *env, const char *fmt, ...),
 
     proxima_spi_obj_t* spiobj = (proxima_spi_obj_t*) self_in;
     print(env, "(<Proxima SPI");
-    print(env, ", baudrate=%u>", spiobj->baudrate);
+    print(env, ", baudrate=%u>", spiobj->speed);
     print(env, ", slave=%u, autoselect=%u", spiobj->slave, spiobj->autoselect);
     print(env, ", mode=%u>)", spiobj->mode);
 }
