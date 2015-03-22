@@ -22,7 +22,7 @@ void initControl()
     MAP_GPIODirModeSet(GPIOA0_BASE, _BV(3), GPIO_DIR_MODE_OUT);
     
     // deassert it by default. Control is active LOW.
-    MAP_GPIOPinWrite(GPIOA0_BASE, _BV(3), 1);
+    MAP_GPIOPinWrite(GPIOA0_BASE, _BV(3), _BV(3));
 
     m_currentStatus = 0;
 }

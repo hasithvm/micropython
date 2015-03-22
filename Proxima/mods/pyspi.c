@@ -38,7 +38,6 @@ typedef struct {
 
 
 
-};
 
 ///////////////////////////Proxima bindings///////////////////////////////////////
 int proxima_spi_init(uint mode, uint clkrate, uint framesize)
@@ -224,6 +223,7 @@ STATIC const mp_arg_t proxima_spi_ctor_args[] = {
     { MP_QSTR_framesize, MP_ARG_KW_ONLY  | MP_ARG_INT,  {.u_int  = 8} },
     { MP_QSTR_slave, MP_ARG_KW_ONLY  | MP_ARG_INT,  {.u_int  = 1} },
     { MP_QSTR_autoselect, MP_ARG_KW_ONLY  | MP_ARG_INT,  {.u_int  = 1} },
+};
 
 STATIC mp_obj_t proxima_mp_spi_make_new(mp_obj_t type_in, mp_uint_t n_args, mp_uint_t n_kw, const mp_obj_t *args) {
     
@@ -233,8 +233,6 @@ STATIC mp_obj_t proxima_mp_spi_make_new(mp_obj_t type_in, mp_uint_t n_args, mp_u
     self->base.type = &proxima_spi_type;
 
     // defaults to no-args.
-    if (n_kw > 0)
-    {
         mp_map_t kw_args;
         mp_map_init_fixed_table(&kw_args, n_kw, args + n_args);
         mp_arg_val_t params[MP_ARRAY_SIZE(proxima_spi_ctor_args)];
