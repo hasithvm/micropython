@@ -11,10 +11,8 @@
 #include "proxima.h"
 #include "devicectl.h"
 
-
-
 STATIC mp_obj_t proxima_mp_begin(void) {
-
+    initControl();
     assertControl();
     return mp_const_none;
 }
