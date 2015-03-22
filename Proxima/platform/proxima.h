@@ -1,5 +1,7 @@
 #ifndef __PROXIMA_H__
 #define __PROXIMA_H__
+
+#include "inc/hw_types.h"
 #include "pin.h"
 
 #define _BV(x)  (1<< x)

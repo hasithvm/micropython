@@ -257,6 +257,8 @@ Q(LONG_SLEEP_PM)
 *                   Proxima-specific QSTRs
 *
 *******************************************************************************/
+Q(Proxima)
+
 Q(SPI)
 Q(open)
 Q(mode)

@@ -95,6 +95,7 @@ APP_MODS_SRC_C = $(addprefix mods/,\
 	pybwdt.c \
 	pyspi.c\
 	devicectl.c\
+	modproxima.c\
 	)
 
 APP_CC3100_SRC_C = $(addprefix drivers/cc3100/src/,\
