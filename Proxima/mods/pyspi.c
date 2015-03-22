@@ -208,7 +208,7 @@ STATIC mp_obj_t proxima_mp_spi_init(mp_obj_t self_in)
     return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(proxima_mp_spi_init_obj, proxima_mp_spi_init);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(proxima_mp_spi_init_obj, proxima_mp_spi_init);
 
 
 
@@ -218,7 +218,7 @@ STATIC mp_obj_t proxima_mp_spi_deinit(mp_obj_t self_in) {
     proxima_spi_deinit();
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(proxima_mp_spi_deinit_obj, proxima_mp_spi_deinit);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(proxima_mp_spi_deinit_obj, proxima_mp_spi_deinit);
 
 
 
@@ -273,11 +273,11 @@ STATIC const mp_map_elem_t proxima_spi_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_send),         (mp_obj_t)&proxima_mp_spi_read_obj},
     { MP_OBJ_NEW_QSTR(MP_QSTR_receive),         (mp_obj_t)&proxima_mp_spi_write_obj},
 };
-
+STATIC MP_DEFINE_CONST_DICT(proxima_spi_locals_dict, proxima_spi_locals_dict_table);
 const mp_obj_type_t proxima_spi_type = {
     { &mp_type_type },
     .name = MP_QSTR_SPI,
     .print = proxima_mp_spi_print,
     .make_new = proxima_mp_spi_make_new,
-    .locals_dict = (mp_obj_t)&proxima_spi_locals_dict_table,
+    .locals_dict = (mp_obj_t)&proxima_spi_locals_dict,
 };
