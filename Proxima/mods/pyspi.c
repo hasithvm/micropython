@@ -40,7 +40,7 @@ typedef struct {
 
 
 ///////////////////////////Proxima bindings///////////////////////////////////////
-int proxima_spi_init(uint mode, uint clkrate, uint framesize)
+STATIC int proxima_spi_init(uint mode, uint clkrate, uint framesize)
 {
     uint spi_frame_size;
     MAP_PRCMPeripheralClkEnable(PRCM_GPIOA0, PRCM_RUN_MODE_CLK);
@@ -203,6 +203,7 @@ STATIC mp_obj_t proxima_mp_spi_init(mp_obj_t self_in)
     if (proxima_spi_init(self->mode, self->speed, self->framesize) != 0)
     {
         //TODO: raise an error here
+        self = self;
     }
     return mp_const_none;
 }
