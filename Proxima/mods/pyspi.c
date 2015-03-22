@@ -172,7 +172,7 @@ STATIC mp_obj_t proxima_mp_spi_read(mp_obj_t self_in, mp_obj_t obj_in)
     vstr_t v;
     mp_obj_t rv = pyb_buf_get_for_recv(obj_in, &v);
     proxima_spi_obj_t* spiobj = (proxima_spi_obj_t*)self_in;
-    proxima_spi_transfer(spiobj->slave, NULL, (uint8_t*)v.buf, v.len, spiobj->autoselect);
+    proxima_spi_transfer(spiobj->slave, (uint8_t*)v.buf,  NULL, v.len, spiobj->autoselect);
 
     return (rv == NULL ? mp_obj_new_str_from_vstr(&mp_type_bytes, &v) : rv);
 }
@@ -187,7 +187,7 @@ STATIC mp_obj_t proxima_mp_spi_write(mp_obj_t self_in, mp_obj_t obj_in)
     proxima_spi_obj_t* spiobj = (proxima_spi_obj_t*)self_in;
 
     pyb_buf_get_for_send(obj_in, &buf, &tmp);
-    proxima_spi_transfer(spiobj->slave, (uint8_t*)buf.buf,NULL, buf.len, spiobj->autoselect);
+    proxima_spi_transfer(spiobj->slave, NULL,(uint8_t*)buf.buf, buf.len, spiobj->autoselect);
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(proxima_mp_spi_write_obj, proxima_mp_spi_write);
