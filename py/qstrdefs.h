@@ -550,9 +550,12 @@ Q(update)
 Q(digest)
 Q(hexdigest)
 Q(sha256)
+Q(hmacsha1)
 #endif
 
 #if MICROPY_PY_UBINASCII
 Q(ubinascii)
 Q(hexlify)
+Q(b64encode)
+Q(b64decode)
 #endif
