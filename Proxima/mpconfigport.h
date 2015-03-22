@@ -114,7 +114,7 @@ extern const struct _mp_obj_module_t mp_module_proxima;
 // extra constants
 #define MICROPY_PORT_CONSTANTS \
     { MP_OBJ_NEW_QSTR(MP_QSTR_pyb),     (mp_obj_t)&pyb_module },          \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_pyb),     (mp_obj_t)&mp_module_proxima},    \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_Proxima),     (mp_obj_t)&mp_module_proxima},    \
 
 
 // vm state and root pointers for the gc
