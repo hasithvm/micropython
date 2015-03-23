@@ -33,7 +33,12 @@
 #if MICROPY_PY_UHASHLIB
 
 #include "crypto-algorithms/sha256.h"
-#include "crypto-algorithms/hmacsha1.h"
+
+#if MICROPY_PY_UHASHLIB_HMACSHA1
+
+#include "hmacsha1.h"
+
+#endif
 
 typedef struct _mp_obj_hash_t {
     mp_obj_base_t base;
@@ -85,6 +90,8 @@ MP_DEFINE_CONST_FUN_OBJ_1(hash_hexdigest_obj, hash_sha256_hexdigest);
 
 /* *************************************************** */
 
+#if MICROPY_PY_UHASHLIB_HMACSHA1
+
 STATIC mp_obj_t hash_hmacsha1(mp_obj_t *data_obj, mp_obj_t *key_obj) {
     // get the data and key
     mp_buffer_info_t data;
@@ -108,7 +115,7 @@ STATIC mp_obj_t hash_hmacsha1(mp_obj_t *data_obj, mp_obj_t *key_obj) {
 }
 MP_DEFINE_CONST_FUN_OBJ_2(hash_hmacsha1_obj, hash_hmacsha1);
 
-
+#endif
 
 STATIC const mp_map_elem_t hash_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_update), (mp_obj_t) &hash_update_obj },
@@ -128,7 +135,9 @@ STATIC const mp_obj_type_t sha256_type = {
 STATIC const mp_map_elem_t mp_module_hashlib_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_uhashlib) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_sha256), (mp_obj_t)&sha256_type },
+#if MICROPY_PY_UHASHLIB_HMACSHA1
     { MP_OBJ_NEW_QSTR(MP_QSTR_hmacsha1), (mp_obj_t)&hash_hmacsha1_obj },
+#endif
 };
 
 STATIC MP_DEFINE_CONST_DICT(mp_module_hashlib_globals, mp_module_hashlib_globals_table);
@@ -140,6 +149,5 @@ const mp_obj_module_t mp_module_uhashlib = {
 };
 
 #include "crypto-algorithms/sha256.c"
-#include "crypto-algorithms/hmacsha1.c"
 
 #endif //MICROPY_PY_UHASHLIB

@@ -19,6 +19,8 @@ APP_INC += -I$(BUILD)
 APP_INC += -I$(BUILD)/genhdr
 APP_INC += -I../lib/fatfs
 APP_INC += -I../lib/mp-readline
+APP_INC += -I../lib/encodings
+APP_INC += -I../lib/crypto
 APP_INC += -I../stmhal
 APP_INC += -Iplatform
 
@@ -137,6 +139,8 @@ APP_MAIN_SRC_C = \
 APP_LIB_SRC_C = $(addprefix lib/,\
 	fatfs/ff.c \
 	mp-readline/readline.c \
+	encodings/base64.c \
+	crypto/hmacsha1.c \
 	)
 	
 APP_STM_SRC_C = $(addprefix stmhal/,\
