@@ -274,3 +274,6 @@ Q(send)
 Q(receive)
 Q(close)
 Q(autoselect)
+
+Q(ntp)
+Q(gettime)
