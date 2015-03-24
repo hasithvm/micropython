@@ -100,6 +100,7 @@ APP_MODS_SRC_C = $(addprefix mods/,\
 	devicectl.c\
 	modproxima.c\
 	modntp.c\
+	modcrypto.c\
 	)
 
 APP_CC3100_SRC_C = $(addprefix drivers/cc3100/src/,\
@@ -166,6 +167,7 @@ APP_STM_SRC_C = $(addprefix stmhal/,\
 
 APP_PLATFORM_SRC_C = $(addprefix platform/,\
 	ntp.c \
+	crypto.c \
 	)
 
 OBJ = $(PY_O) $(addprefix $(BUILD)/, $(APP_FATFS_SRC_C:.c=.o) $(APP_RTOS_SRC_C:.c=.o) $(APP_FTP_SRC_C:.c=.o) $(APP_HAL_SRC_C:.c=.o) $(APP_MISC_SRC_C:.c=.o))

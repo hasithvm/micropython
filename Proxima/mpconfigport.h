@@ -101,6 +101,7 @@ extern const struct _mp_obj_module_t mp_module_usocket;
 extern const struct _mp_obj_module_t mp_module_network;
 extern const struct _mp_obj_module_t mp_module_proxima;
 extern const struct _mp_obj_module_t mp_module_ntp;
+extern const struct _mp_obj_module_t mp_module_crypto;
 
 #define MICROPY_PORT_BUILTIN_MODULES \
     { MP_OBJ_NEW_QSTR(MP_QSTR_pyb),     (mp_obj_t)&pyb_module },          \
@@ -114,6 +115,7 @@ extern const struct _mp_obj_module_t mp_module_ntp;
     { MP_OBJ_NEW_QSTR(MP_QSTR_heapq),   (mp_obj_t)&mp_module_uheapq },    \
     { MP_OBJ_NEW_QSTR(MP_QSTR_Proxima),     (mp_obj_t)&mp_module_proxima}, \
     { MP_OBJ_NEW_QSTR(MP_QSTR_ntp),     (mp_obj_t)&mp_module_ntp},        \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_crypto),     (mp_obj_t)&mp_module_crypto},  \
 
 // extra constants
 #define MICROPY_PORT_CONSTANTS \

@@ -277,3 +277,5 @@ Q(autoselect)
 
 Q(ntp)
 Q(gettime)
+
+Q(crypto)
