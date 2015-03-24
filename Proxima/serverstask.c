@@ -36,6 +36,7 @@
 #include "debug.h"
 #include "mpexception.h"
 #include "telnet.h"
+#include "ftp.h"
 #include "pybwdt.h"
 
 
@@ -84,6 +85,7 @@ void TASK_Servers (void *pvParameters) {
     strcpy (servers_pass, SERVERS_DEF_PASS);
 
     telnet_init();
+    ftp_init();
 
     for ( ;; ) {
 
@@ -92,6 +94,7 @@ void TASK_Servers (void *pvParameters) {
                 servers_data.do_disable = false;
                 // disable all net processes
                 telnet_disable();
+                ftp_disable();
 
                 // now clear the flag
                 servers_data.enabled = false;
@@ -99,6 +102,7 @@ void TASK_Servers (void *pvParameters) {
             else {
                 if (cycle) {
                     telnet_run();
+                    ftp_run();
             }
             }
         }
@@ -106,6 +110,7 @@ void TASK_Servers (void *pvParameters) {
             servers_data.do_enable = false;
 
             telnet_enable();
+            ftp_enable();
 
             // now set the flag
             servers_data.enabled = true;
