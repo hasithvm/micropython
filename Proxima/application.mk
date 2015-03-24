@@ -1,5 +1,6 @@
 APP_INC =  -I.
 APP_INC += -I..
+APP_INC += -Iftp
 APP_INC += -Ifatfs/src
 APP_INC += -Ifatfs/src/drivers
 APP_INC += -IFreeRTOS
@@ -116,6 +117,11 @@ APP_SL_SRC_C = $(addprefix simplelink/,\
 
 APP_TELNET_SRC_C = $(addprefix telnet/,\
 	telnet.c \
+	)
+
+APP_FTP_SRC_C = $(addprefix ftp/,\
+	ftp.c \
+	updater.c \
 	)
 	
 APP_UTIL_SRC_C = $(addprefix util/,\
