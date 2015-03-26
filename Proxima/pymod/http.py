@@ -84,9 +84,7 @@ class http_request:
             port = 443
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_SSL)
 
-        print("Looking up: {0}:{1}".format(self.url, port))
         ip = socket.getaddrinfo(self.host, port)[0][4]
-        print(ip)
 
         req = "{0} {1} HTTP/1.1\r\n{2}\r\n\r\n{3}".format(self.method, self.path, self.dump_headers(), self.data)
 

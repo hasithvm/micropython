@@ -36,12 +36,6 @@ def update(msg):
 
     key = CONSUMER_SECRET + "&" + ACCESS_TOKEN_SECRET
 
-    print()
-    print(sign)
-    print()
-    print(key)
-    print()
-
     hash_vars['oauth_signature'] = http.url_encode(b64encode(crypto.hmacsha1(sign, key)).decode("utf-8"), True)
     del hash_vars['status']
 
@@ -55,5 +49,4 @@ def update(msg):
     req.add_header("Content-Type", "application/x-www-form-urlencoded")
     req.set_data("status=" + http.url_encode(msg, True))
 
-    req.dump()
     return req.request()
