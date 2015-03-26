@@ -42,6 +42,9 @@
 #include "i2c.h"
 #include "pybi2c.h"
 #include "mpexception.h"
+#include "proxima.h"
+
+static uint32_t err;
 
 /// \moduleref pyb
 /// \class I2C - a two-wire serial protocol
@@ -129,6 +132,11 @@ void i2c_init (uint mode, uint slvaddr, uint baudrate) {
 
     // Configure I2C module with the specified baudrate
     MAP_I2CMasterInitExpClk(I2CA0_BASE, baudrate);
+
+    MAP_PRCMPeripheralClkEnable(PRCM_GPIOA0, PRCM_RUN_MODE_CLK);
+    MAP_PRCMPeripheralClkEnable(PRCM_GPIOA1, PRCM_RUN_MODE_CLK);
+    MAP_PinTypeI2C(IF_GSPI_SCL_PIN, PIN_MODE_5);
+    MAP_PinTypeI2C(IF_GSPI_SDA_PIN, PIN_MODE_5);
 }
 
 void i2c_deinit(void) {
@@ -152,7 +160,7 @@ STATIC bool pybI2C_transaction(uint cmd, uint timeout) {
     while ((MAP_I2CMasterIntStatusEx(I2CA0_BASE, false) & (I2C_MASTER_INT_DATA | I2C_MASTER_INT_TIMEOUT)) == 0);
 
     // Check for any errors in transfer
-    if (MAP_I2CMasterErr(I2CA0_BASE) != I2C_MASTER_ERR_NONE) {
+    if ((err = MAP_I2CMasterErr(I2CA0_BASE)) != I2C_MASTER_ERR_NONE) {
         switch(cmd) {
         case I2C_MASTER_CMD_BURST_SEND_START:
         case I2C_MASTER_CMD_BURST_SEND_CONT:
@@ -342,6 +350,11 @@ STATIC mp_obj_t pyb_i2c_init(mp_uint_t n_args, const mp_obj_t *args, mp_map_t *k
     return pyb_i2c_init_helper(args[0], n_args - 1, args + 1, kw_args);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(pyb_i2c_init_obj, 1, pyb_i2c_init);
+
+STATIC mp_obj_t pyb_i2c_err(mp_obj_t self) {
+    return mp_obj_new_int_from_uint(err);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(pyb_i2c_err_obj, pyb_i2c_err);
 
 /// \method deinit()
 /// Turn off the I2C bus.
@@ -603,6 +616,7 @@ STATIC const mp_map_elem_t pyb_i2c_locals_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_deinit),          (mp_obj_t)&pyb_i2c_deinit_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_is_ready),        (mp_obj_t)&pyb_i2c_is_ready_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_scan),            (mp_obj_t)&pyb_i2c_scan_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_err),             (mp_obj_t)&pyb_i2c_err_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_send),            (mp_obj_t)&pyb_i2c_send_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_recv),            (mp_obj_t)&pyb_i2c_recv_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_mem_read),        (mp_obj_t)&pyb_i2c_mem_read_obj },
