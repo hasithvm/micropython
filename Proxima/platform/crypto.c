@@ -20,3 +20,8 @@ void hmacsha1_hw(uint8_t* key, uint32_t key_len, uint8_t* data, uint32_t data_le
     MAP_SHAMD5HMACProcess(SHAMD5_BASE, data, data_len, digest);
 }
 
+void sha1_hw(uint8_t* data, uint32_t data_len, uint8_t* digest) {
+    MAP_SHAMD5ConfigSet(SHAMD5_BASE, SHAMD5_ALGO_SHA1);
+    MAP_SHAMD5DataProcess(SHAMD5_BASE, data, data_len, digest);
+}
+

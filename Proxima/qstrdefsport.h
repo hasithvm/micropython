@@ -276,6 +276,11 @@ Q(close)
 Q(autoselect)
 
 Q(ntp)
-Q(gettime)
+Q(gettimestamp)
+Q(getlocaltime)
+Q(updatetime)
 
 Q(crypto)
+Q(sha1)
+Q(user)
+Q(IPPROTO_SSL)
