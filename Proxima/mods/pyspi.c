@@ -80,8 +80,8 @@ int proxima_spi_init(uint mode, uint clkrate, uint framesize)
         // set up the SPI transfer parameters
         MAP_SPIConfigSetExpClk(GSPI_BASE,MAP_PRCMPeripheralClockGet(PRCM_GSPI),
                      clkrate,SPI_MODE_MASTER, mode,
-                     (SPI_SW_CTRL_CS |
-                     SPI_4PIN_MODE |
+                     (SPI_HW_CTRL_CS |
+                     SPI_3PIN_MODE |
                      SPI_TURBO_OFF |
                      SPI_CS_ACTIVEHIGH |
                      spi_frame_size));
