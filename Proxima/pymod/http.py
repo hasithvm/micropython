@@ -123,6 +123,7 @@ class http_request:
         sock.send(bytes(req, "UTF-8"))
 
         data = sock.recv(2048)
+        data += sock.recv(2048)
 
         sock.close()
         return data
