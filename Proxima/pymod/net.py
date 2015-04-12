@@ -1,6 +1,6 @@
 from network import WLAN
 w = WLAN(WLAN.STA)
-w.connect("Proxima", security=2, key="fishlure1")
+w.connect("ES_5898", security=2, key="neither2")
 
 import demo
-demo.btn_tweet()
+demo.btn_stream()
