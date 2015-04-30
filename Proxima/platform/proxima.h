@@ -16,8 +16,7 @@
 #define IF_GSPI_SEL1_PIN PIN_15
 #define IF_GSPI_SEL2_PIN PIN_53
 
-
-
-
+#define IF_GSPI_SDA_PIN PIN_03
+#define IF_GSPI_SCL_PIN PIN_04
 
 #endif

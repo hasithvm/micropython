@@ -160,7 +160,7 @@ STATIC void wlan_initialize_data (void);
 STATIC void wlan_reenable (SlWlanMode_t mode);
 STATIC void wlan_get_sl_mac (void);
 STATIC modwlan_Status_t wlan_do_connect (const char* ssid, uint32_t ssid_len, const char* bssid, uint8_t sec,
-                                         const char* key, uint32_t key_len);
+                                         const char* key, uint32_t key_len, const char* user, uint32_t user_len);
 
 
 //*****************************************************************************
@@ -593,14 +593,22 @@ STATIC void wlan_reenable (SlWlanMode_t mode) {
 }
 
 STATIC modwlan_Status_t wlan_do_connect (const char* ssid, uint32_t ssid_len, const char* bssid, uint8_t sec,
-                                         const char* key, uint32_t key_len) {
+                                         const char* key, uint32_t key_len, const char* user, uint32_t user_len) {
     SlSecParams_t secParams;
+    SlSecParamsExt_t extSecParams;
 
     secParams.Key = (_i8*)key;
     secParams.KeyLen = ((key != NULL) ? key_len : 0);
     secParams.Type = sec;
 
-    if (0 == sl_WlanConnect((_i8*)ssid, ssid_len, (_u8*)bssid, &secParams, NULL)) {
+    extSecParams.AnonUser = NULL;
+    extSecParams.AnonUserLen = 0;
+    extSecParams.CertIndex = 0;
+    extSecParams.EapMethod = SL_ENT_EAP_METHOD_PEAP1_MSCHAPv2;
+    extSecParams.User = (int8_t*)user;
+    extSecParams.UserLen = user_len;
+
+    if (0 == sl_WlanConnect((_i8*)ssid, ssid_len, (_u8*)bssid, &secParams, user != NULL ? &extSecParams : NULL)) {
 
         // Wait for the WLAN Event
         uint32_t waitForConnectionMs = 0;
@@ -758,6 +766,7 @@ STATIC mp_obj_t wlan_connect(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_
         { MP_QSTR_security, MP_ARG_KW_ONLY  | MP_ARG_INT, {.u_int = SL_SEC_TYPE_OPEN} },
         { MP_QSTR_key,      MP_ARG_KW_ONLY  | MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_bssid,    MP_ARG_KW_ONLY  | MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        { MP_QSTR_user,     MP_ARG_KW_ONLY  | MP_ARG_OBJ, {.u_obj = mp_const_none} },
     };
 
     // check for correct wlan mode
@@ -809,9 +818,15 @@ STATIC mp_obj_t wlan_connect(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_
         }
     }
 
+    const char *user = NULL;
+    mp_uint_t user_len = 0;
+    if (args[4].u_obj != mp_const_none) {
+        user = mp_obj_str_get_data(args[4].u_obj, &user_len);
+    }
+
     // connect to the requested access point
     modwlan_Status_t status;
-    status = wlan_do_connect (ssid, ssid_len, bssid, sec, key, key_len);
+    status = wlan_do_connect (ssid, ssid_len, bssid, sec, key, key_len, user, user_len);
     if (status == MODWLAN_ERROR_TIMEOUT) {
         nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, mpexception_os_operation_failed));
     }

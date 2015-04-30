@@ -40,6 +40,7 @@
 // socket class
 
 STATIC const mp_obj_type_t socket_type;
+STATIC void socket_select_nic(mod_network_socket_obj_t *self, const byte *ip);
 
 // constructor socket(family=AF_INET, type=SOCK_STREAM, proto=IPPROTO_TCP, fileno=None)
 STATIC mp_obj_t socket_make_new(mp_obj_t type_in, mp_uint_t n_args, mp_uint_t n_kw, const mp_obj_t *args) {
@@ -66,6 +67,9 @@ STATIC mp_obj_t socket_make_new(mp_obj_t type_in, mp_uint_t n_args, mp_uint_t n_
             }
         }
     }
+
+    uint8_t ip[4];
+    socket_select_nic(s, ip);
     return s;
 }
 
@@ -176,8 +180,11 @@ STATIC mp_obj_t socket_connect(mp_obj_t self_in, mp_obj_t addr_in) {
 
     // call the NIC to connect the socket
     int _errno;
-    if (self->nic_type->connect(self, ip, port, &_errno) != 0) {
-        nlr_raise(mp_obj_new_exception_arg1(&mp_type_OSError, MP_OBJ_NEW_SMALL_INT(_errno)));
+    int ret;
+    if ((ret = self->nic_type->connect(self, ip, port, &_errno)) != 0) {
+        if (ret != SL_ESECSNOVERIFY) {
+            nlr_raise(mp_obj_new_exception_arg1(&mp_type_OSError, MP_OBJ_NEW_SMALL_INT(_errno)));
+        }
     }
 
     return mp_const_none;
@@ -284,6 +291,11 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_recvfrom_obj, socket_recvfrom);
 // method socket.setsockopt(level, optname, value)
 STATIC mp_obj_t socket_setsockopt(mp_uint_t n_args, const mp_obj_t *args) {
     mod_network_socket_obj_t *self = args[0];
+
+    if (self->nic == MP_OBJ_NULL) {
+        // not connected
+        nlr_raise(mp_obj_new_exception_arg1(&mp_type_OSError, MP_OBJ_NEW_SMALL_INT(ENOTCONN)));
+    }
 
     mp_int_t level = mp_obj_get_int(args[1]);
     mp_int_t opt = mp_obj_get_int(args[2]);
@@ -433,6 +445,7 @@ STATIC const mp_map_elem_t mp_module_usocket_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_IPPROTO_TCP),     MP_OBJ_NEW_SMALL_INT(IPPROTO_TCP) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_IPPROTO_UDP),     MP_OBJ_NEW_SMALL_INT(IPPROTO_UDP) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_IPPROTO_RAW),     MP_OBJ_NEW_SMALL_INT(IPPROTO_RAW) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_IPPROTO_SSL),     MP_OBJ_NEW_SMALL_INT(SL_SEC_SOCKET) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(mp_module_usocket_globals, mp_module_usocket_globals_table);

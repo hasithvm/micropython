@@ -32,6 +32,7 @@
 #include "py/objtuple.h"
 #include "py/binary.h"
 #include "py/parsenum.h"
+#include "py/nlr.h"
 
 #if MICROPY_PY_STRUCT
 
@@ -206,10 +207,58 @@ STATIC mp_obj_t struct_pack(mp_uint_t n_args, const mp_obj_t *args) {
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(struct_pack_obj, 1, MP_OBJ_FUN_ARGS_MAX, struct_pack);
 
+STATIC mp_obj_t struct_packin(mp_uint_t n_args, const mp_obj_t *args) {
+    // TODO: "The arguments must match the values required by the format exactly."
+
+    mp_buffer_info_t data_buf;
+    mp_get_buffer_raise(args[0], &data_buf, MP_BUFFER_READ);
+
+    const char *fmt = mp_obj_str_get_str(args[1]);
+    char fmt_type = get_fmt_type(&fmt);
+    mp_int_t size = MP_OBJ_SMALL_INT_VALUE(struct_calcsize(args[1]));
+
+    if (size != data_buf.len) {
+        nlr_raise(mp_obj_new_exception_arg1(&mp_type_ValueError, MP_OBJ_NEW_SMALL_INT(size)));
+    }
+
+    byte *p = (byte*)data_buf.buf;
+    memset(p, 0, size);
+
+    for (mp_uint_t i = 2; i < n_args; i++) {
+        mp_uint_t sz = 1;
+        if (unichar_isdigit(*fmt)) {
+            sz = get_fmt_num(&fmt);
+        }
+        if (sz > 1) {
+            // TODO: size spec support only for string len
+            assert(*fmt == 's');
+        }
+
+        if (*fmt == 's') {
+            mp_buffer_info_t bufinfo;
+            mp_get_buffer_raise(args[i], &bufinfo, MP_BUFFER_READ);
+            mp_uint_t to_copy = sz;
+            if (bufinfo.len < to_copy) {
+                to_copy = bufinfo.len;
+            }
+            memcpy(p, bufinfo.buf, to_copy);
+            memset(p + to_copy, 0, sz - to_copy);
+            p += sz;
+            fmt++;
+        } else {
+            mp_binary_set_val(fmt_type, *fmt++, args[i], &p);
+        }
+    }
+
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(struct_packin_obj, 1, MP_OBJ_FUN_ARGS_MAX, struct_packin);
+
 STATIC const mp_map_elem_t mp_module_struct_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_struct) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_calcsize), (mp_obj_t)&struct_calcsize_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_pack), (mp_obj_t)&struct_pack_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_packin), (mp_obj_t)&struct_packin_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_unpack), (mp_obj_t)&struct_unpack_obj },
 };
 

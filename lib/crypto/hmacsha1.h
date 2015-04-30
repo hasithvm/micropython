@@ -1,4 +1,3 @@
-
 #ifndef HMACSHA1_H
 #define HMACSHA1_H
 

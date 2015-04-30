@@ -20,6 +20,8 @@ APP_INC += -I$(BUILD)
 APP_INC += -I$(BUILD)/genhdr
 APP_INC += -I../lib/fatfs
 APP_INC += -I../lib/mp-readline
+APP_INC += -I../lib/encodings
+APP_INC += -I../lib/crypto
 APP_INC += -I../stmhal
 APP_INC += -Iplatform
 
@@ -97,6 +99,8 @@ APP_MODS_SRC_C = $(addprefix mods/,\
 	pyspi.c\
 	devicectl.c\
 	modproxima.c\
+	modntp.c\
+	modcrypto.c\
 	)
 
 APP_CC3100_SRC_C = $(addprefix drivers/cc3100/src/,\
@@ -143,6 +147,8 @@ APP_MAIN_SRC_C = \
 APP_LIB_SRC_C = $(addprefix lib/,\
 	fatfs/ff.c \
 	mp-readline/readline.c \
+	encodings/base64.c \
+	crypto/hmacsha1.c \
 	)
 	
 APP_STM_SRC_C = $(addprefix stmhal/,\
@@ -159,9 +165,14 @@ APP_STM_SRC_C = $(addprefix stmhal/,\
 	string0.c \
 	)
 
+APP_PLATFORM_SRC_C = $(addprefix platform/,\
+	ntp.c \
+	crypto.c \
+	)
+
 OBJ = $(PY_O) $(addprefix $(BUILD)/, $(APP_FATFS_SRC_C:.c=.o) $(APP_RTOS_SRC_C:.c=.o) $(APP_FTP_SRC_C:.c=.o) $(APP_HAL_SRC_C:.c=.o) $(APP_MISC_SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(APP_MODS_SRC_C:.c=.o) $(APP_CC3100_SRC_C:.c=.o) $(APP_SL_SRC_C:.c=.o) $(APP_TELNET_SRC_C:.c=.o) $(APP_UTIL_SRC_C:.c=.o) $(APP_UTIL_SRC_S:.s=.o))
-OBJ += $(addprefix $(BUILD)/, $(APP_MAIN_SRC_C:.c=.o) $(APP_LIB_SRC_C:.c=.o) $(APP_STM_SRC_C:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(APP_MAIN_SRC_C:.c=.o) $(APP_LIB_SRC_C:.c=.o) $(APP_STM_SRC_C:.c=.o) $(APP_PLATFORM_SRC_C:.c=.o))
 OBJ += $(BUILD)/pins.o
 
 # Add the linker script
