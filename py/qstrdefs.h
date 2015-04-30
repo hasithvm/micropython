@@ -66,6 +66,11 @@ Q(__add__)
 Q(__sub__)
 Q(__repr__)
 Q(__str__)
+#if MICROPY_PY_DESCRIPTORS
+Q(__get__)
+Q(__set__)
+Q(__delete__)
+#endif
 Q(__getattr__)
 Q(__del__)
 Q(__call__)
@@ -81,6 +86,9 @@ Q(__truediv__)
 Q(__floordiv__)
 Q(__iadd__)
 Q(__isub__)
+Q(__invert__)
+Q(__neg__)
+Q(__pos__)
 #endif
 
 Q(micropython)
@@ -136,6 +144,9 @@ Q(SystemExit)
 Q(TypeError)
 Q(UnboundLocalError)
 Q(ValueError)
+#if MICROPY_EMIT_NATIVE
+Q(ViperTypeError)
+#endif
 Q(ZeroDivisionError)
 #if MICROPY_PY_BUILTINS_STR_UNICODE
 Q(UnicodeError)
@@ -147,6 +158,10 @@ Q(True)
 Q(object)
 
 Q(NoneType)
+
+#if MICROPY_PY_COLLECTIONS_ORDEREDDICT
+Q(OrderedDict)
+#endif
 
 Q(abs)
 Q(all)
@@ -288,6 +303,11 @@ Q(find)
 Q(rfind)
 Q(rindex)
 Q(split)
+#if MICROPY_PY_BUILTINS_STR_SPLITLINES
+Q(splitlines)
+Q(keepends)
+Q(\n)
+#endif
 Q(rsplit)
 Q(startswith)
 Q(endswith)
@@ -430,8 +450,15 @@ Q(stdout)
 Q(stderr)
 Q(version)
 Q(version_info)
+#if MICROPY_PY_ATTRTUPLE
+Q(name)
+#endif
+Q(implementation)
 #if MICROPY_PY_SYS_MAXSIZE
 Q(maxsize)
+#endif
+#if MICROPY_PY_SYS_EXC_INFO
+Q(exc_info)
 #endif
 Q(print_exception)
 #endif

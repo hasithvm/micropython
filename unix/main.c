@@ -43,8 +43,7 @@
 #include "py/repl.h"
 #include "py/gc.h"
 #include "py/stackctrl.h"
-#include "py/pfenv.h"
-#include "genhdr/py-version.h"
+#include "genhdr/mpversion.h"
 #include "input.h"
 
 // Command line options, with their defaults
@@ -91,7 +90,7 @@ STATIC int handle_uncaught_exception(mp_obj_t exc) {
     }
 
     // Report all other exceptions
-    mp_obj_print_exception(printf_wrapper, NULL, exc);
+    mp_obj_print_exception(&mp_plat_print, exc);
     return 1;
 }
 
@@ -303,7 +302,7 @@ STATIC void set_sys_argv(char *argv[], int argc, int start_arg) {
 int main(int argc, char **argv) {
     prompt_read_history();
 
-    mp_stack_set_limit(32768);
+    mp_stack_set_limit(40000 * (BYTES_PER_WORD / 4));
 
     pre_process_options(argc, argv);
 

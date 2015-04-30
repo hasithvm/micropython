@@ -57,7 +57,10 @@
 #define MICROPY_OPT_COMPUTED_GOTO   (1)
 #define MICROPY_OPT_CACHE_MAP_LOOKUP_IN_BYTECODE (1)
 #define MICROPY_CAN_OVERRIDE_BUILTINS (1)
+#define MICROPY_PY_FUNCTION_ATTRS   (1)
+#define MICROPY_PY_DESCRIPTORS      (1)
 #define MICROPY_PY_BUILTINS_STR_UNICODE (1)
+#define MICROPY_PY_BUILTINS_STR_SPLITLINES (1)
 #define MICROPY_PY_BUILTINS_MEMORYVIEW (1)
 #define MICROPY_PY_BUILTINS_FROZENSET (1)
 #define MICROPY_PY_BUILTINS_COMPILE (1)
@@ -68,10 +71,15 @@
 #define MICROPY_PY_SYS_PLATFORM     "linux"
 #define MICROPY_PY_SYS_MAXSIZE      (1)
 #define MICROPY_PY_SYS_STDFILES     (1)
+#define MICROPY_PY_SYS_EXC_INFO     (1)
+#define MICROPY_PY_COLLECTIONS_ORDEREDDICT (1)
 #define MICROPY_PY_MATH_SPECIAL_FUNCTIONS (1)
 #define MICROPY_PY_CMATH            (1)
 #define MICROPY_PY_IO_FILEIO        (1)
 #define MICROPY_PY_GC_COLLECT_RETVAL (1)
+
+#define MICROPY_STACKLESS           (0)
+#define MICROPY_STACKLESS_STRICT    (0)
 
 #define MICROPY_PY_UCTYPES          (1)
 #define MICROPY_PY_UZLIB            (1)
@@ -162,6 +170,8 @@ void mp_unix_free_exec(void *ptr, mp_uint_t size);
 void mp_unix_mark_exec(void);
 #define MP_PLAT_ALLOC_EXEC(min_size, ptr, size) mp_unix_alloc_exec(min_size, ptr, size)
 #define MP_PLAT_FREE_EXEC(ptr, size) mp_unix_free_exec(ptr, size)
+
+#define MP_PLAT_PRINT_STRN(str, len) fwrite(str, 1, len, stdout)
 
 extern const struct _mp_obj_fun_builtin_t mp_builtin_input_obj;
 extern const struct _mp_obj_fun_builtin_t mp_builtin_open_obj;

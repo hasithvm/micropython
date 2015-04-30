@@ -98,8 +98,8 @@ Module contents
 
 .. class:: struct(descriptor, layout_type)
 
-   Create a "foreign data structure" object based on its descriptor (encoded
-   as a dictionary) and layout type.
+   Create a "foreign data structure" class based on its descriptor (encoded
+   as a dictionary) and layout type (see below).
 
 .. data:: LITTLE_ENDIAN
 
@@ -115,7 +115,46 @@ Module contents
    Native structure - with data endianness and alignment conforming to
    the target ABI.
 
-(to be continued)
+.. function:: sizeof(struct)
+
+   Return size of data structure in bytes. Argument can be either structure
+   class or specific instantiated structure object (or its field).
+
+.. function:: addressof(obj)
+
+   Return address of an object. Argument should be bytes, bytearray or
+   other object supporting buffer protocol (and address of this buffer
+   is what actually returned).
+
+.. function:: bytes_at(addr, size)
+
+   Capture memory at the given address and size as bytes object. As bytes
+   object is immutable, memory is actually duplicated and copied into
+   bytes object, so if memory contents change later, created object
+   retains original value.
+
+.. function:: bytearray_at(addr, size)
+
+   Capture memory at the given address and size as bytearray object.
+   Unlike bytes_at() function above, memory is captured by reference,
+   so it can be both written too, and you will access current value
+   at the given memory address.
+
+Structure classes and instantiating structure objects
+-----------------------------------------------------
+
+Given structure descriptor and layout type, you can instantiate a
+"structure class" using uctypes.struct() factory function. From it,
+you can instantiate a specific structure instance at a given
+memory address. Memory address usually comes from following sources:
+
+* Predefined address, when accessing hardware registers on a baremetal
+  port. Lookup these addresses in datasheet for a particular MCU/SoC.
+* As return value from a call to some FFI (Foreign Function Interface)
+  function.
+* From uctypes.addressof(), when you want to pass arguments to FFI
+  function, or alternatively, to access some data for I/O (for example,
+  data read from file or network socket).
 
 Structure objects
 -----------------

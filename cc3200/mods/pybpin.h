@@ -25,6 +25,9 @@
  * THE SOFTWARE.
  */
 
+#ifndef PYBPIN_H_
+#define PYBPIN_H_
+
 // This file requires pin_defs_xxx.h (which has port specific enums and
 // defines, so we include it here. It should never be included directly
 
@@ -42,7 +45,7 @@ typedef struct {
     uint8_t             af;
     uint8_t             strength;
     uint8_t             mode;
-    bool                used;
+    bool                isused;
 } pin_obj_t;
 
 extern const mp_obj_type_t pin_type;
@@ -73,3 +76,4 @@ uint32_t pin_get_mode(const pin_obj_t *self);
 uint32_t pin_get_type(const pin_obj_t *self);
 uint32_t pin_get_strenght(const pin_obj_t *self);
 
+#endif  // PYBPIN_H_

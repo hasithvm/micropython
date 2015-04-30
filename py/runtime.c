@@ -149,7 +149,7 @@ mp_obj_t mp_load_global(qstr qst) {
                     "name not defined"));
             } else {
                 nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_NameError,
-                    "name '%s' is not defined", qstr_str(qst)));
+                    "name '%q' is not defined", qst));
             }
         }
     }
@@ -228,8 +228,8 @@ mp_obj_t mp_unary_op(mp_uint_t op, mp_obj_t arg) {
                 "unsupported type for operator"));
         } else {
             nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_TypeError,
-                "unsupported type for %s: '%s'",
-                qstr_str(mp_unary_op_method_name[op]), mp_obj_get_type_str(arg)));
+                "unsupported type for %q: '%s'",
+                mp_unary_op_method_name[op], mp_obj_get_type_str(arg)));
         }
     }
 }
@@ -522,8 +522,8 @@ unsupported_op:
             "unsupported type for operator"));
     } else {
         nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_TypeError,
-            "unsupported types for %s: '%s', '%s'",
-            qstr_str(mp_binary_op_method_name[op]), mp_obj_get_type_str(lhs), mp_obj_get_type_str(rhs)));
+            "unsupported types for %q: '%s', '%s'",
+            mp_binary_op_method_name[op], mp_obj_get_type_str(lhs), mp_obj_get_type_str(rhs)));
     }
 
 zero_division:
@@ -577,7 +577,11 @@ mp_obj_t mp_call_method_n_kw(mp_uint_t n_args, mp_uint_t n_kw, const mp_obj_t *a
     return mp_call_function_n_kw(args[0], n_args + adjust, n_kw, args + 2 - adjust);
 }
 
-mp_obj_t mp_call_method_n_kw_var(bool have_self, mp_uint_t n_args_n_kw, const mp_obj_t *args) {
+// This function only needs to be exposed externally when in stackless mode.
+#if !MICROPY_STACKLESS
+STATIC
+#endif
+void mp_call_prepare_args_n_kw_var(bool have_self, mp_uint_t n_args_n_kw, const mp_obj_t *args, mp_call_args_t *out_args) {
     mp_obj_t fun = *args++;
     mp_obj_t self = MP_OBJ_NULL;
     if (have_self) {
@@ -715,8 +719,19 @@ mp_obj_t mp_call_method_n_kw_var(bool have_self, mp_uint_t n_args_n_kw, const mp
         }
     }
 
-    mp_obj_t res = mp_call_function_n_kw(fun, pos_args_len, (args2_len - pos_args_len) / 2, args2);
-    m_del(mp_obj_t, args2, args2_alloc);
+    out_args->fun = fun;
+    out_args->args = args2;
+    out_args->n_args = pos_args_len;
+    out_args->n_kw = (args2_len - pos_args_len) / 2;
+    out_args->n_alloc = args2_alloc;
+}
+
+mp_obj_t mp_call_method_n_kw_var(bool have_self, mp_uint_t n_args_n_kw, const mp_obj_t *args) {
+    mp_call_args_t out_args;
+    mp_call_prepare_args_n_kw_var(have_self, n_args_n_kw, args, &out_args);
+
+    mp_obj_t res = mp_call_function_n_kw(out_args.fun, out_args.n_args, out_args.n_kw, out_args.args);
+    m_del(mp_obj_t, out_args.args, out_args.n_alloc);
 
     return res;
 }
@@ -854,16 +869,41 @@ mp_obj_t mp_load_attr(mp_obj_t base, qstr attr) {
     }
 }
 
+// Given a member that was extracted from an instance, convert it correctly
+// and put the result in the dest[] array for a possible method call.
+// Conversion means dealing with static/class methods, callables, and values.
+// see http://docs.python.org/3/howto/descriptor.html
+void mp_convert_member_lookup(mp_obj_t self, const mp_obj_type_t *type, mp_obj_t member, mp_obj_t *dest) {
+    if (MP_OBJ_IS_TYPE(member, &mp_type_staticmethod)) {
+        // return just the function
+        dest[0] = ((mp_obj_static_class_method_t*)member)->fun;
+    } else if (MP_OBJ_IS_TYPE(member, &mp_type_classmethod)) {
+        // return a bound method, with self being the type of this object
+        dest[0] = ((mp_obj_static_class_method_t*)member)->fun;
+        dest[1] = (mp_obj_t)type;
+    } else if (MP_OBJ_IS_TYPE(member, &mp_type_type)) {
+        // Don't try to bind types (even though they're callable)
+        dest[0] = member;
+    } else if (mp_obj_is_callable(member)) {
+        // return a bound method, with self being this object
+        dest[0] = member;
+        dest[1] = self;
+    } else {
+        // class member is a value, so just return that value
+        dest[0] = member;
+    }
+}
+
 // no attribute found, returns:     dest[0] == MP_OBJ_NULL, dest[1] == MP_OBJ_NULL
 // normal attribute found, returns: dest[0] == <attribute>, dest[1] == MP_OBJ_NULL
 // method attribute found, returns: dest[0] == <method>,    dest[1] == <self>
-void mp_load_method_maybe(mp_obj_t base, qstr attr, mp_obj_t *dest) {
+void mp_load_method_maybe(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
     // clear output to indicate no attribute/method found yet
     dest[0] = MP_OBJ_NULL;
     dest[1] = MP_OBJ_NULL;
 
     // get the type
-    mp_obj_type_t *type = mp_obj_get_type(base);
+    mp_obj_type_t *type = mp_obj_get_type(obj);
 
     // look for built-in names
     if (0) {
@@ -875,11 +915,11 @@ void mp_load_method_maybe(mp_obj_t base, qstr attr, mp_obj_t *dest) {
 
     } else if (attr == MP_QSTR___next__ && type->iternext != NULL) {
         dest[0] = (mp_obj_t)&mp_builtin_next_obj;
-        dest[1] = base;
+        dest[1] = obj;
 
-    } else if (type->load_attr != NULL) {
+    } else if (type->attr != NULL) {
         // this type can do its own load, so call it
-        type->load_attr(base, attr, dest);
+        type->attr(obj, attr, dest);
 
     } else if (type->locals_dict != NULL) {
         // generic method lookup
@@ -888,26 +928,7 @@ void mp_load_method_maybe(mp_obj_t base, qstr attr, mp_obj_t *dest) {
         mp_map_t *locals_map = mp_obj_dict_get_map(type->locals_dict);
         mp_map_elem_t *elem = mp_map_lookup(locals_map, MP_OBJ_NEW_QSTR(attr), MP_MAP_LOOKUP);
         if (elem != NULL) {
-            // check if the methods are functions, static or class methods
-            // see http://docs.python.org/3/howto/descriptor.html
-            if (MP_OBJ_IS_TYPE(elem->value, &mp_type_staticmethod)) {
-                // return just the function
-                dest[0] = ((mp_obj_static_class_method_t*)elem->value)->fun;
-            } else if (MP_OBJ_IS_TYPE(elem->value, &mp_type_classmethod)) {
-                // return a bound method, with self being the type of this object
-                dest[0] = ((mp_obj_static_class_method_t*)elem->value)->fun;
-                dest[1] = mp_obj_get_type(base);
-            } else if (MP_OBJ_IS_TYPE(elem->value, &mp_type_type)) {
-                // Don't try to bind types
-                dest[0] = elem->value;
-            } else if (mp_obj_is_callable(elem->value)) {
-                // return a bound method, with self being this object
-                dest[0] = elem->value;
-                dest[1] = base;
-            } else {
-                // class member is a value, so just return that value
-                dest[0] = elem->value;
-            }
+            mp_convert_member_lookup(obj, type, elem->value, dest);
         }
     }
 }
@@ -926,12 +947,12 @@ void mp_load_method(mp_obj_t base, qstr attr, mp_obj_t *dest) {
             // following CPython, we give a more detailed error message for type objects
             if (MP_OBJ_IS_TYPE(base, &mp_type_type)) {
                 nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_AttributeError,
-                    "type object '%s' has no attribute '%s'",
-                    qstr_str(((mp_obj_type_t*)base)->name), qstr_str(attr)));
+                    "type object '%q' has no attribute '%q'",
+                    ((mp_obj_type_t*)base)->name, attr));
             } else {
                 nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_AttributeError,
-                    "'%s' object has no attribute '%s'",
-                    mp_obj_get_type_str(base), qstr_str(attr)));
+                    "'%s' object has no attribute '%q'",
+                    mp_obj_get_type_str(base), attr));
             }
         }
     }
@@ -940,8 +961,11 @@ void mp_load_method(mp_obj_t base, qstr attr, mp_obj_t *dest) {
 void mp_store_attr(mp_obj_t base, qstr attr, mp_obj_t value) {
     DEBUG_OP_printf("store attr %p.%s <- %p\n", base, qstr_str(attr), value);
     mp_obj_type_t *type = mp_obj_get_type(base);
-    if (type->store_attr != NULL) {
-        if (type->store_attr(base, attr, value)) {
+    if (type->attr != NULL) {
+        mp_obj_t dest[2] = {MP_OBJ_SENTINEL, value};
+        type->attr(base, attr, dest);
+        if (dest[0] == MP_OBJ_NULL) {
+            // success
             return;
         }
     }
@@ -950,8 +974,8 @@ void mp_store_attr(mp_obj_t base, qstr attr, mp_obj_t value) {
             "no such attribute"));
     } else {
         nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_AttributeError,
-            "'%s' object has no attribute '%s'",
-            mp_obj_get_type_str(base), qstr_str(attr)));
+            "'%s' object has no attribute '%q'",
+            mp_obj_get_type_str(base), attr));
     }
 }
 
@@ -1156,7 +1180,7 @@ mp_obj_t mp_import_from(mp_obj_t module, qstr name) {
     if (dest[1] != MP_OBJ_NULL) {
         // Hopefully we can't import bound method from an object
 import_error:
-        nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ImportError, "cannot import name %s", qstr_str(name)));
+        nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ImportError, "cannot import name %q", name));
     }
 
     if (dest[0] != MP_OBJ_NULL) {

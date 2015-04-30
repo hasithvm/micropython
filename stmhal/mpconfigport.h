@@ -55,14 +55,18 @@
 #define MICROPY_STREAMS_NON_BLOCK   (1)
 #define MICROPY_MODULE_WEAK_LINKS   (1)
 #define MICROPY_CAN_OVERRIDE_BUILTINS (1)
+#define MICROPY_PY_FUNCTION_ATTRS   (1)
 #define MICROPY_PY_BUILTINS_STR_UNICODE (1)
+#define MICROPY_PY_BUILTINS_STR_SPLITLINES (1)
 #define MICROPY_PY_BUILTINS_MEMORYVIEW (1)
 #define MICROPY_PY_BUILTINS_FROZENSET (1)
 #define MICROPY_PY_BUILTINS_EXECFILE (1)
 #define MICROPY_PY_MICROPYTHON_MEM_INFO (1)
 #define MICROPY_PY_ARRAY_SLICE_ASSIGN (1)
 #define MICROPY_PY_SYS_EXIT         (1)
+#define MICROPY_PY_SYS_MAXSIZE      (1)
 #define MICROPY_PY_SYS_STDFILES     (1)
+#define MICROPY_PY_COLLECTIONS_ORDEREDDICT (1)
 #define MICROPY_PY_MATH_SPECIAL_FUNCTIONS (1)
 #define MICROPY_PY_CMATH            (1)
 #define MICROPY_PY_IO               (1)
@@ -168,6 +172,8 @@ extern const struct _mp_obj_module_t mp_module_network;
 
 #define MICROPY_MAKE_POINTER_CALLABLE(p) ((void*)((mp_uint_t)(p) | 1))
 
+#define MP_SSIZE_MAX (0x7fffffff)
+
 #define UINT_FMT "%u"
 #define INT_FMT "%d"
 
@@ -176,6 +182,9 @@ typedef unsigned int mp_uint_t; // must be pointer size
 typedef void *machine_ptr_t; // must be of pointer size
 typedef const void *machine_const_ptr_t; // must be of pointer size
 typedef long mp_off_t;
+
+void mp_hal_stdout_tx_strn_cooked(const char *str, mp_uint_t len);
+#define MP_PLAT_PRINT_STRN(str, len) mp_hal_stdout_tx_strn_cooked(str, len)
 
 // We have inlined IRQ functions for efficiency (they are generally
 // 1 machine instruction).

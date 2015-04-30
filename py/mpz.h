@@ -39,22 +39,37 @@
 // unsigned versions.
 //
 // MPZ_DIG_SIZE can be between 4 and 8*sizeof(mpz_dig_t), but it makes most
-// sense to have it as large as possible.  Below, the type is auto-detected
-// depending on the machine, but it (and MPZ_DIG_SIZE) can be freely changed so
-// long as the constraints mentioned above are met.
+// sense to have it as large as possible.  If MPZ_DIG_SIZE is not already
+// defined then it is auto-detected below, depending on the machine.  The types
+// are then set based on the value of MPZ_DIG_SIZE (although they can be freely
+// changed so long as the constraints mentioned above are met).
 
-#if defined(__x86_64__) || defined(_WIN64)
-// 64-bit machine, using 32-bit storage for digits
+#ifndef MPZ_DIG_SIZE
+  #if defined(__x86_64__) || defined(_WIN64)
+    // 64-bit machine, using 32-bit storage for digits
+    #define MPZ_DIG_SIZE (32)
+  #else
+    // default: 32-bit machine, using 16-bit storage for digits
+    #define MPZ_DIG_SIZE (16)
+  #endif
+#endif
+
+#if MPZ_DIG_SIZE > 16
 typedef uint32_t mpz_dig_t;
 typedef uint64_t mpz_dbl_dig_t;
 typedef int64_t mpz_dbl_dig_signed_t;
-#define MPZ_DIG_SIZE (32)
-#else
-// 32-bit machine, using 16-bit storage for digits
+#elif MPZ_DIG_SIZE > 8
 typedef uint16_t mpz_dig_t;
 typedef uint32_t mpz_dbl_dig_t;
 typedef int32_t mpz_dbl_dig_signed_t;
-#define MPZ_DIG_SIZE (16)
+#elif MPZ_DIG_SIZE > 4
+typedef uint8_t mpz_dig_t;
+typedef uint16_t mpz_dbl_dig_t;
+typedef int16_t mpz_dbl_dig_signed_t;
+#else
+typedef uint8_t mpz_dig_t;
+typedef uint8_t mpz_dbl_dig_t;
+typedef int8_t mpz_dbl_dig_signed_t;
 #endif
 
 #ifdef _WIN64
@@ -110,6 +125,7 @@ void mpz_divmod_inpl(mpz_t *dest_quo, mpz_t *dest_rem, const mpz_t *lhs, const m
 mp_int_t mpz_hash(const mpz_t *z);
 bool mpz_as_int_checked(const mpz_t *z, mp_int_t *value);
 bool mpz_as_uint_checked(const mpz_t *z, mp_uint_t *value);
+void mpz_as_bytes(const mpz_t *z, bool big_endian, mp_uint_t len, byte *buf);
 #if MICROPY_PY_BUILTINS_FLOAT
 mp_float_t mpz_as_float(const mpz_t *z);
 #endif

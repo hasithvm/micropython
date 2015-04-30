@@ -10,6 +10,7 @@ BUILD ?= build-$(BOARD)
 
 include ../py/mkenv.mk
 -include mpconfigport.mk
+include boards/$(BOARD)/mpconfigboard.mk
 
 # qstr definitions (must come before including py.mk)
 QSTR_DEFS = qstrdefsport.h $(BUILD)/pins_qstr.h
@@ -45,7 +46,7 @@ CFLAGS_CORTEX_M4 = -mthumb -mtune=cortex-m4 -mabi=aapcs-linux -mcpu=cortex-m4 -m
 CFLAGS = $(INC) -Wall -Wpointer-arith -Werror -ansi -std=gnu99 -nostdlib $(CFLAGS_MOD) $(CFLAGS_CORTEX_M4) $(COPT)
 CFLAGS += -Iboards/$(BOARD)
 
-LDFLAGS = -nostdlib -T stm32f405.ld -Map=$(@:.elf=.map) --cref
+LDFLAGS = -nostdlib -T $(LD_FILE) -Map=$(@:.elf=.map) --cref
 LIBS =
 
 # Debugging/Optimization
@@ -62,6 +63,7 @@ endif
 #LIBS += $(shell $(CC) -print-libgcc-file-name)
 
 SRC_LIB = $(addprefix lib/,\
+	libc/string0.c \
 	libm/math.c \
 	libm/asinfacosf.c \
 	libm/atanf.c \
@@ -94,7 +96,6 @@ SRC_LIB = $(addprefix lib/,\
 
 SRC_C = \
 	main.c \
-	string0.c \
 	system_stm32f4xx.c \
 	stm32f4xx_it.c \
 	usbd_conf.c \
@@ -168,6 +169,7 @@ SRC_HAL = $(addprefix $(HAL_DIR)/src/,\
 	stm32f4xx_hal_pcd.c \
 	stm32f4xx_hal_pcd_ex.c \
 	stm32f4xx_hal_pwr.c \
+	stm32f4xx_hal_pwr_ex.c \
 	stm32f4xx_hal_rcc.c \
 	stm32f4xx_hal_rcc_ex.c \
 	stm32f4xx_hal_rng.c \
@@ -274,7 +276,6 @@ $(BUILD)/firmware.elf: $(OBJ)
 
 MAKE_PINS = boards/make-pins.py
 BOARD_PINS = boards/$(BOARD)/pins.csv
-AF_FILE = boards/stm32f4xx_af.csv
 PREFIX_FILE = boards/stm32f4xx_prefix.c
 GEN_PINS_SRC = $(BUILD)/pins_$(BOARD).c
 GEN_PINS_HDR = $(HEADER_BUILD)/pins.h

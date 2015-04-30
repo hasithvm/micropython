@@ -49,6 +49,25 @@
 // values below.
 
 /*****************************************************************************/
+/* Object representation                                                     */
+
+// A Micro Python object is a machine word having the following form:
+//  - xxxx...xxx1 : a small int, bits 1 and above are the value
+//  - xxxx...xx10 : a qstr, bits 2 and above are the value
+//  - xxxx...xx00 : a pointer to an mp_obj_base_t (unless a fake object)
+#define MICROPY_OBJ_REPR_A (0)
+
+// A Micro Python object is a machine word having the following form:
+//  - xxxx...xx01 : a small int, bits 2 and above are the value
+//  - xxxx...xx11 : a qstr, bits 2 and above are the value
+//  - xxxx...xxx0 : a pointer to an mp_obj_base_t (unless a fake object)
+#define MICROPY_OBJ_REPR_B (1)
+
+#ifndef MICROPY_OBJ_REPR
+#define MICROPY_OBJ_REPR (MICROPY_OBJ_REPR_A)
+#endif
+
+/*****************************************************************************/
 /* Memory allocation policy                                                  */
 
 // Number of words allocated (in BSS) to the GC stack (minimum is 1)
@@ -125,6 +144,19 @@
 #define MICROPY_QSTR_BYTES_IN_LEN (1)
 #endif
 
+// Avoid using C stack when making Python function calls. C stack still
+// may be used if there's no free heap.
+#ifndef MICROPY_STACKLESS
+#define MICROPY_STACKLESS (0)
+#endif
+
+// Never use C stack when making Python function calls. This may break
+// testsuite as will subtly change which exception is thrown in case
+// of too deep recursion and other similar cases.
+#ifndef MICROPY_STACKLESS_STRICT
+#define MICROPY_STACKLESS_STRICT (0)
+#endif
+
 /*****************************************************************************/
 /* Micro Python emitters                                                     */
 
@@ -152,6 +184,11 @@
 // Whether to enable the thumb inline assembler
 #ifndef MICROPY_EMIT_INLINE_THUMB
 #define MICROPY_EMIT_INLINE_THUMB (0)
+#endif
+
+// Whether to enable float support in the Thumb2 inline assembler
+#ifndef MICROPY_EMIT_INLINE_THUMB_FLOAT
+#define MICROPY_EMIT_INLINE_THUMB_FLOAT (1)
 #endif
 
 // Whether to emit ARM native code
@@ -359,9 +396,25 @@ typedef double mp_float_t;
 /*****************************************************************************/
 /* Fine control over Python builtins, classes, modules, etc                  */
 
+// Whether to implement attributes on functions
+#ifndef MICROPY_PY_FUNCTION_ATTRS
+#define MICROPY_PY_FUNCTION_ATTRS (0)
+#endif
+
+// Whether to support descriptors (__get__ and __set__)
+// This costs some code size and makes all load attrs and store attrs slow
+#ifndef MICROPY_PY_DESCRIPTORS
+#define MICROPY_PY_DESCRIPTORS (0)
+#endif
+
 // Whether str object is proper unicode
 #ifndef MICROPY_PY_BUILTINS_STR_UNICODE
 #define MICROPY_PY_BUILTINS_STR_UNICODE (0)
+#endif
+
+// Whether str.splitlines() method provided
+#ifndef MICROPY_PY_BUILTINS_STR_SPLITLINES
+#define MICROPY_PY_BUILTINS_STR_SPLITLINES (0)
 #endif
 
 // Whether to support bytearray object
@@ -411,9 +464,19 @@ typedef double mp_float_t;
 #define MICROPY_PY_BUILTINS_COMPILE (0)
 #endif
 
+// Whether to support enumerate function(type)
+#ifndef MICROPY_PY_BUILTINS_ENUMERATE
+#define MICROPY_PY_BUILTINS_ENUMERATE (1)
+#endif
+
 // Whether to support the Python 2 execfile function
 #ifndef MICROPY_PY_BUILTINS_EXECFILE
 #define MICROPY_PY_BUILTINS_EXECFILE (0)
+#endif
+
+// Whether to support reversed function(type)
+#ifndef MICROPY_PY_BUILTINS_REVERSED
+#define MICROPY_PY_BUILTINS_REVERSED (1)
 #endif
 
 // Whether to set __file__ for imported modules
@@ -439,9 +502,20 @@ typedef double mp_float_t;
 #define MICROPY_PY_ARRAY_SLICE_ASSIGN (0)
 #endif
 
+// Whether to support attrtuple type (MicroPython extension)
+// It provides space-efficient tuples with attribute access
+#ifndef MICROPY_PY_ATTRTUPLE
+#define MICROPY_PY_ATTRTUPLE (1)
+#endif
+
 // Whether to provide "collections" module
 #ifndef MICROPY_PY_COLLECTIONS
 #define MICROPY_PY_COLLECTIONS (1)
+#endif
+
+// Whether to provide "collections.OrderedDict" type
+#ifndef MICROPY_PY_COLLECTIONS_ORDEREDDICT
+#define MICROPY_PY_COLLECTIONS_ORDEREDDICT (0)
 #endif
 
 // Whether to provide "math" module
@@ -497,6 +571,12 @@ typedef double mp_float_t;
 // Whether to provide "sys.maxsize" constant
 #ifndef MICROPY_PY_SYS_MAXSIZE
 #define MICROPY_PY_SYS_MAXSIZE (0)
+#endif
+
+// Whether to provide "sys.exc_info" function
+// Avoid enabling this, this function is Python2 heritage
+#ifndef MICROPY_PY_SYS_EXC_INFO
+#define MICROPY_PY_SYS_EXC_INFO (0)
 #endif
 
 // Whether to provide "sys.exit" function
@@ -628,15 +708,20 @@ typedef double mp_float_t;
 #define MICROPY_MAKE_POINTER_CALLABLE(p) (p)
 #endif
 
-// If these MP_PLAT_* macros are overridden then the memory allocated by them
+// If these MP_PLAT_*_EXEC macros are overridden then the memory allocated by them
 // must be somehow reachable for marking by the GC, since the native code
 // generators store pointers to GC managed memory in the code.
 #ifndef MP_PLAT_ALLOC_EXEC
-#define MP_PLAT_ALLOC_EXEC(min_size, ptr, size) do { *ptr = m_new(byte, min_size); *size = min_size; } while(0)
+#define MP_PLAT_ALLOC_EXEC(min_size, ptr, size) do { *ptr = m_new(byte, min_size); *size = min_size; } while (0)
 #endif
 
 #ifndef MP_PLAT_FREE_EXEC
 #define MP_PLAT_FREE_EXEC(ptr, size) m_del(byte, ptr, size)
+#endif
+
+// This macro is used to do all output (except when MICROPY_PY_IO is defined)
+#ifndef MP_PLAT_PRINT_STRN
+#define MP_PLAT_PRINT_STRN(str, len) printf("%.*s", (int)len, str)
 #endif
 
 #ifndef MP_SSIZE_MAX

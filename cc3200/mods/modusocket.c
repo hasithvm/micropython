@@ -25,7 +25,6 @@
  * THE SOFTWARE.
  */
 
-#include <std.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -40,6 +39,18 @@
 // socket class
 
 STATIC const mp_obj_type_t socket_type;
+
+STATIC void socket_select_nic(mod_network_socket_obj_t *self) {
+    // select a nic
+    self->nic = mod_network_find_nic();
+    self->nic_type = (mod_network_nic_type_t*)mp_obj_get_type(self->nic);
+
+    // call the nic to open the socket
+    int _errno;
+    if (self->nic_type->socket(self, &_errno) != 0) {
+        nlr_raise(mp_obj_new_exception_arg1(&mp_type_OSError, MP_OBJ_NEW_SMALL_INT(_errno)));
+    }
+}
 
 // constructor socket(family=AF_INET, type=SOCK_STREAM, proto=IPPROTO_TCP, fileno=None)
 STATIC mp_obj_t socket_make_new(mp_obj_t type_in, mp_uint_t n_args, mp_uint_t n_kw, const mp_obj_t *args) {
@@ -66,22 +77,12 @@ STATIC mp_obj_t socket_make_new(mp_obj_t type_in, mp_uint_t n_args, mp_uint_t n_
             }
         }
     }
+
+    socket_select_nic(s);
+
     return s;
 }
 
-STATIC void socket_select_nic(mod_network_socket_obj_t *self, const byte *ip) {
-    if (self->nic == MP_OBJ_NULL) {
-        // select NIC based on IP
-        self->nic = mod_network_find_nic(ip);
-        self->nic_type = (mod_network_nic_type_t*)mp_obj_get_type(self->nic);
-
-        // call the NIC to open the socket
-        int _errno;
-        if (self->nic_type->socket(self, &_errno) != 0) {
-            nlr_raise(mp_obj_new_exception_arg1(&mp_type_OSError, MP_OBJ_NEW_SMALL_INT(_errno)));
-        }
-    }
-}
 // method socket.close()
 STATIC mp_obj_t socket_close(mp_obj_t self_in) {
     mod_network_socket_obj_t *self = self_in;
@@ -99,9 +100,6 @@ STATIC mp_obj_t socket_bind(mp_obj_t self_in, mp_obj_t addr_in) {
     // get address
     uint8_t ip[MOD_NETWORK_IPV4ADDR_BUF_SIZE];
     mp_uint_t port = mod_network_parse_inet_addr(addr_in, ip);
-
-    // check if we need to select a NIC
-    socket_select_nic(self, ip);
 
     // call the NIC to bind the socket
     int _errno;
@@ -171,9 +169,6 @@ STATIC mp_obj_t socket_connect(mp_obj_t self_in, mp_obj_t addr_in) {
     uint8_t ip[MOD_NETWORK_IPV4ADDR_BUF_SIZE];
     mp_uint_t port = mod_network_parse_inet_addr(addr_in, ip);
 
-    // check if we need to select a NIC
-    socket_select_nic(self, ip);
-
     // call the NIC to connect the socket
     int _errno;
     if (self->nic_type->connect(self, ip, port, &_errno) != 0) {
@@ -237,9 +232,6 @@ STATIC mp_obj_t socket_sendto(mp_obj_t self_in, mp_obj_t data_in, mp_obj_t addr_
     // get address
     uint8_t ip[MOD_NETWORK_IPV4ADDR_BUF_SIZE];
     mp_uint_t port = mod_network_parse_inet_addr(addr_in, ip);
-
-    // check if we need to select a NIC
-    socket_select_nic(self, ip);
 
     // call the NIC to sendto
     int _errno;
@@ -430,6 +422,7 @@ STATIC const mp_map_elem_t mp_module_usocket_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_SOCK_DGRAM),      MP_OBJ_NEW_SMALL_INT(SOCK_DGRAM) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_SOCK_RAW),        MP_OBJ_NEW_SMALL_INT(SOCK_RAW) },
 
+    { MP_OBJ_NEW_QSTR(MP_QSTR_IPPROTO_SEC),     MP_OBJ_NEW_SMALL_INT(SL_SEC_SOCKET) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_IPPROTO_TCP),     MP_OBJ_NEW_SMALL_INT(IPPROTO_TCP) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_IPPROTO_UDP),     MP_OBJ_NEW_SMALL_INT(IPPROTO_UDP) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_IPPROTO_RAW),     MP_OBJ_NEW_SMALL_INT(IPPROTO_RAW) },

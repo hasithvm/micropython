@@ -54,6 +54,7 @@ typedef enum {
 } pybsleep_wake_reason_t;
 
 typedef void (*WakeUpCB_t)(const mp_obj_t self);
+typedef void (*DeinitCB_t)(const mp_obj_t self);
 
 /******************************************************************************
  DECLARE EXPORTED VARIABLES
@@ -72,5 +73,6 @@ void pybsleep_set_wlan_lpds_callback (mp_obj_t cb_obj);
 void pybsleep_set_gpio_lpds_callback (mp_obj_t cb_obj);
 void pybsleep_set_timer_lpds_callback (mp_obj_t cb_obj);
 void pybsleep_configure_timer_wakeup (uint pwrmode);
+pybsleep_reset_cause_t pybsleep_get_reset_cause (void);
 
 #endif /* PYBSLEEP_H_ */

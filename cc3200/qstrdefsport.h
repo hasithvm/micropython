@@ -1,3 +1,30 @@
+/*
+ * This file is part of the Micro Python project, http://micropython.org/
+ *
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2015 Daniel Campora
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
 // qstrs specific to this port
 Q(__name__)
 Q(help)
@@ -35,10 +62,12 @@ Q(mkdisk)
 Q(enable)
 Q(disable)
 // Entries for sys.path
-Q(/SFLASH)
-Q(/SFLASH/LIB)
-Q(/SD)
-Q(/SD/LIB)
+Q(/flash)
+Q(/flash/lib)
+#if MICROPY_HW_HAS_SDCARD
+Q(/sd)
+Q(/sd/lib)
+#endif
 
 // for module weak links
 Q(re)
@@ -48,9 +77,17 @@ Q(heapq)
 // for os module
 Q(uos)
 Q(os)
+Q(sysname)
+Q(nodename)
+Q(release)
+Q(version)
+Q(machine)
+Q(uname)
 Q(/)
-Q(SFLASH)
-Q(SD)
+Q(flash)
+#if MICROPY_HW_HAS_SDCARD
+Q(sd)
+#endif
 Q(chdir)
 Q(getcwd)
 Q(listdir)
@@ -126,13 +163,10 @@ Q(FLOW_TXRX)
 
 // for I2C class
 Q(I2C)
-Q(mode)
 Q(addr)
-Q(baudrate)
 Q(data)
 Q(memaddr)
 Q(addr_size)
-Q(timeout)
 Q(init)
 Q(deinit)
 Q(is_ready)
@@ -141,14 +175,17 @@ Q(send)
 Q(recv)
 Q(mem_read)
 Q(mem_write)
-Q(MASTER)
 
 // for ADC class
 Q(ADC)
 Q(read)
 
+#if MICROPY_HW_HAS_SDCARD
 // for SD class
 Q(SD)
+Q(enable)
+Q(disable)
+#endif
 
 // for RTC class
 Q(RTC)
@@ -192,6 +229,7 @@ Q(AF_INET6)
 Q(SOCK_STREAM)
 Q(SOCK_DGRAM)
 Q(SOCK_RAW)
+Q(IPPROTO_SEC)
 Q(IPPROTO_TCP)
 Q(IPPROTO_UDP)
 Q(IPPROTO_RAW)
@@ -215,8 +253,15 @@ Q(connect)
 Q(isconnected)
 Q(disconnect)
 Q(channel)
+Q(rssi)
 Q(ifconfig)
 Q(urn)
+Q(mode)
+Q(config_ip)
+Q(ip)
+Q(subnet)
+Q(gateway)
+Q(dns)
 Q(STA)
 Q(AP)
 Q(P2P)
@@ -226,13 +271,18 @@ Q(WPA_WPA2)
 Q(WPA_ENT)
 Q(WPS_PBC)
 Q(WPS_PIN)
+Q(DYNAMIC)
+Q(STATIC)
 
 // for WDT class
 Q(WDT)
+Q(enable)
 Q(kick)
 
 // for HeartBeat class
 Q(HeartBeat)
+Q(enable)
+Q(disable)
 
 // for callback class
 Q(init)
@@ -243,7 +293,7 @@ Q(handler)
 Q(intmode)
 Q(value)
 Q(priority)
-Q(wake)
+Q(wakes)
 
 // for Sleep class
 Q(Sleep)
@@ -263,4 +313,18 @@ Q(SOFT_RESET)
 Q(WLAN_WAKE)
 Q(PIN_WAKE)
 Q(RTC_WAKE)
+
+// for SPI class
+Q(SPI)
+Q(baudrate)
+Q(bits)
+Q(submode)
+Q(cs)
+Q(init)
+Q(deinit)
+Q(send)
+Q(recv)
+Q(send_recv)
+Q(ACTIVE_LOW)
+Q(ACTIVE_HIGH)
 

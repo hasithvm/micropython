@@ -199,13 +199,10 @@ void pin_verify_af (uint af) {
 
 void pin_config (pin_obj_t *self, uint af, uint mode, uint type, uint strength) {
     // configure the pin in analog mode
-    self->af = af;
-    self->mode = mode;
-    self->type = type;
-    self->strength = strength;
+    self->af = af, self->mode = mode, self->type = type, self->strength = strength;
     pin_obj_configure ((const pin_obj_t *)self);
     // mark the pin as used
-    self->used = true;
+    self->isused = true;
     // register it with the sleep module
     pybsleep_add ((const mp_obj_t)self, (WakeUpCB_t)pin_obj_configure);
 }
@@ -432,14 +429,14 @@ STATIC mp_obj_t pin_obj_init_helper(pin_obj_t *self, mp_uint_t n_args, const mp_
 
 /// \method print()
 /// Return a string describing the pin object.
-STATIC void pin_print(void (*print)(void *env, const char *fmt, ...), void *env, mp_obj_t self_in, mp_print_kind_t kind) {
+STATIC void pin_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     pin_obj_t *self = self_in;
     uint32_t af = MAP_PinModeGet(self->pin_num);
     uint32_t type = pin_get_type(self);
     uint32_t strength = pin_get_strenght(self);
 
     // pin name
-    print(env, "<Pin.cpu.%s, af=%u", qstr_str(self->name), af);
+    mp_printf(print, "<Pin.cpu.%q, af=%u", self->name, af);
 
     if (af == PIN_MODE_0) {
         // IO mode
@@ -450,7 +447,7 @@ STATIC void pin_print(void (*print)(void *env, const char *fmt, ...), void *env,
         } else {
             mode_qst = MP_QSTR_OUT;
         }
-        print(env, ", mode=Pin.%s", qstr_str(mode_qst)); // safe because mode_qst has no formatting chars
+        mp_printf(print, ", mode=Pin.%q", mode_qst);
     }
 
     // pin type
@@ -468,7 +465,7 @@ STATIC void pin_print(void (*print)(void *env, const char *fmt, ...), void *env,
     } else {
         type_qst = MP_QSTR_OD_PD;
     }
-    print(env, ", pull=Pin.%s", qstr_str(type_qst));
+    mp_printf(print, ", pull=Pin.%q", type_qst);
 
     // Strength
     qstr str_qst;
@@ -479,7 +476,7 @@ STATIC void pin_print(void (*print)(void *env, const char *fmt, ...), void *env,
     } else {
         str_qst = MP_QSTR_S6MA;
     }
-    print(env, ", strength=Pin.%s>", qstr_str(str_qst));
+    mp_printf(print, ", strength=Pin.%q>", str_qst);
 }
 
 /// \classmethod \constructor(id, ...)
@@ -617,7 +614,7 @@ STATIC mp_obj_t pin_af(mp_obj_t self_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(pin_af_obj, pin_af);
 
-/// \method callback(method, intmode, value, priority, pwrmode)
+/// \method callback(method, intmode, priority, pwrmode)
 /// Creates a callback object associated to a pin
 /// min num of arguments is 1 (intmode)
 STATIC mp_obj_t pin_callback (mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -627,7 +624,7 @@ STATIC mp_obj_t pin_callback (mp_uint_t n_args, const mp_obj_t *pos_args, mp_map
     pin_obj_t *self = pos_args[0];
     // check if any parameters were passed
     mp_obj_t _callback = mpcallback_find(self);
-    if (kw_args->used > 0 || _callback == mp_const_none) {
+    if (kw_args->used > 0 || !_callback) {
         // convert the priority to the correct value
         uint priority = mpcallback_translate_priority (args[2].u_int);
         // verify the interrupt mode
@@ -840,8 +837,6 @@ STATIC void EXTI_Handler(uint port) {
 
     pin_obj_t *self = (pin_obj_t *)pin_find_pin_by_port_bit(&pin_cpu_pins_locals_dict, port, bit);
     mp_obj_t _callback = mpcallback_find(self);
-    if (_callback) {
-        mpcallback_handler(_callback);
-    }
+    mpcallback_handler(_callback);
 }
 

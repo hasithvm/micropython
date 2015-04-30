@@ -25,9 +25,8 @@
  * THE SOFTWARE.
  */
 
-
-#include <std.h>
 #include <stdint.h>
+#include "std.h"
 
 #include "py/mpstate.h"
 #include "py/runtime.h"
@@ -43,7 +42,7 @@
 #include "pybuart.h"
 #include "pybpin.h"
 #include "pybrtc.h"
-#include "pybsystick.h"
+#include "mpsystick.h"
 #include "simplelink.h"
 #include "modwlan.h"
 #include "moduos.h"
@@ -62,9 +61,11 @@
 #include "pybsd.h"
 #include "pybwdt.h"
 #include "pybsleep.h"
+#include "pybspi.h"
 #include "utils.h"
 #include "gccollect.h"
 #include "mperror.h"
+#include "genhdr/mpversion.h"
 
 
 #ifdef DEBUG
@@ -232,17 +233,6 @@ STATIC mp_obj_t pyb_repl_uart(uint n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pyb_repl_uart_obj, 0, 1, pyb_repl_uart);
 
-/// \function mkdisk('path')
-/// Formats the selected drive, useful when the filesystem has been damaged beyond repair
-STATIC mp_obj_t pyb_mkdisk(mp_obj_t path_o) {
-    const char *path = mp_obj_str_get_str(path_o);
-    if (FR_OK != f_mkfs(path, 1, 0)) {
-        nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, mpexception_os_operation_failed));
-    }
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(pyb_mkdisk_obj, pyb_mkdisk);
-
 MP_DECLARE_CONST_FUN_OBJ(pyb_main_obj); // defined in main.c
 
 STATIC const mp_map_elem_t pyb_module_globals_table[] = {
@@ -267,8 +257,6 @@ STATIC const mp_map_elem_t pyb_module_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_elapsed_micros),      (mp_obj_t)&pyb_elapsed_micros_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_delay),               (mp_obj_t)&pyb_delay_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_udelay),              (mp_obj_t)&pyb_udelay_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_sync),                (mp_obj_t)&os_sync_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_mkdisk),              (mp_obj_t)&pyb_mkdisk_obj },
 
 #if MICROPY_HW_ENABLE_RNG
     { MP_OBJ_NEW_QSTR(MP_QSTR_rng),                 (mp_obj_t)&pyb_rng_get_obj },
@@ -281,6 +269,7 @@ STATIC const mp_map_elem_t pyb_module_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_Pin),                 (mp_obj_t)&pin_type },
     { MP_OBJ_NEW_QSTR(MP_QSTR_ADC),                 (mp_obj_t)&pyb_adc_type },
     { MP_OBJ_NEW_QSTR(MP_QSTR_I2C),                 (mp_obj_t)&pyb_i2c_type },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_SPI),                 (mp_obj_t)&pyb_spi_type },
     { MP_OBJ_NEW_QSTR(MP_QSTR_UART),                (mp_obj_t)&pyb_uart_type },
     { MP_OBJ_NEW_QSTR(MP_QSTR_WDT),                 (mp_obj_t)&pyb_wdt_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_Sleep),               (mp_obj_t)&pyb_sleep_obj },

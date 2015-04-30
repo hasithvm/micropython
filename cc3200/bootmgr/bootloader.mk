@@ -60,17 +60,20 @@ BOOT_MAIN_SRC_S = \
 	bootmgr/runapp.s
 
 BOOT_PY_SRC_C = $(addprefix py/,\
-	pfenv.c \
-	pfenv_printf.c \
+	mpprint.c \
 	)
 
 BOOT_STM_SRC_C = $(addprefix stmhal/,\
 	printf.c \
-	string0.c \
 	)
-	
+
+BOOT_LIB_SRC_C = $(addprefix lib/,\
+	libc/string0.c \
+	)
+
 OBJ  = $(addprefix $(BUILD)/, $(BOOT_HAL_SRC_C:.c=.o) $(BOOT_SL_SRC_C:.c=.o) $(BOOT_CC3100_SRC_C:.c=.o) $(BOOT_UTIL_SRC_C:.c=.o) $(BOOT_MISC_SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(BOOT_MAIN_SRC_C:.c=.o) $(BOOT_MAIN_SRC_S:.s=.o) $(BOOT_PY_SRC_C:.c=.o) $(BOOT_STM_SRC_C:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(BOOT_LIB_SRC_C:.c=.o))
 
 # Add the linker script
 LINKER_SCRIPT = bootmgr/bootmgr.lds
@@ -125,6 +128,6 @@ $(BUILD)/bootloader.bin: $(BUILD)/bootmgr.bin
 $(HEADER_BUILD)/qstrdefs.generated.h: | $(HEADER_BUILD)
 	touch $@
 
-# Create an empty "py-version.h" needed by py/mkrules.mk
-$(HEADER_BUILD)/py-version.h: | $(HEADER_BUILD)
+# Create an empty "mpversion.h" needed by py/mkrules.mk
+$(HEADER_BUILD)/mpversion.h: | $(HEADER_BUILD)
 	touch $@

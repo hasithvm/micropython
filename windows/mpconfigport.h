@@ -51,6 +51,7 @@
 #define MICROPY_STREAMS_NON_BLOCK   (1)
 #define MICROPY_OPT_COMPUTED_GOTO   (0)
 #define MICROPY_CAN_OVERRIDE_BUILTINS (1)
+#define MICROPY_PY_DESCRIPTORS      (1)
 #define MICROPY_PY_BUILTINS_STR_UNICODE (1)
 #define MICROPY_PY_BUILTINS_MEMORYVIEW (1)
 #define MICROPY_PY_BUILTINS_FROZENSET (1)
@@ -113,6 +114,8 @@ typedef long mp_off_t;
 
 typedef void *machine_ptr_t; // must be of pointer size
 typedef const void *machine_const_ptr_t; // must be of pointer size
+
+#define MP_PLAT_PRINT_STRN(str, len) fwrite(str, 1, len, stdout)
 
 extern const struct _mp_obj_fun_builtin_t mp_builtin_input_obj;
 extern const struct _mp_obj_fun_builtin_t mp_builtin_open_obj;
